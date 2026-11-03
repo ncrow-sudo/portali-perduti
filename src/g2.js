@@ -8,6 +8,7 @@ const BUILDS=['snello','normale','robusto'],HAIRS=['corti','lunghi','coda','cres
 function randLook(){return{build:pick(BUILDS),skin:ri(0,5),hairStyle:pick(HAIRS),hair:ri(0,6),hat:pick(HATS),shirt:ri(0,6),pants:ri(0,4),shield:ri(0,4)}}
 const EYE_W=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.3}),EYE_H=new THREE.MeshBasicMaterial({color:0xffffff}),MOUTH_M=new THREE.MeshStandardMaterial({color:0x7a2a24,roughness:.6}),CHEEK_M=new THREE.MeshStandardMaterial({color:0xe88a80,roughness:.8}),BTN_M=new THREE.MeshStandardMaterial({color:0xe8d8a0,roughness:.4,metalness:.4}),SOLE_M=new THREE.MeshStandardMaterial({color:0x1e140c,roughness:.9});
 function makeHumanoid(L,scale=1,o={}){
+  if(o.cls&&GLB.has(o.cls)){try{const g=makeGltfHuman(L,scale,o);if(g)return g}catch(e){console.warn('glb',e)}}
   const bw={snello:.86,normale:1,robusto:1.2}[L.build]||1,mats=[];const sm=(c,r=.8)=>{const m=std({color:c,roughness:r});mats.push(m);return m};
   const skin=sm(o.skinC||LOOK.skin[L.skin],.7),shirt=sm(o.shirtC||LOOK.shirt[L.shirt],.85),pants=sm(o.pantsC||LOOK.pants[L.pants],.9),boots=sm('#3a2616'),hairM=sm(LOOK.hair[L.hair]),belt=sm('#4a2e16',.6);
   const root=new THREE.Group(),hips=new THREE.Group();hips.position.y=.98;root.add(hips);const torso=new THREE.Group();hips.add(torso);
@@ -31,7 +32,7 @@ const qTmp=new THREE.Quaternion(),qTmp2=new THREE.Quaternion(),eTmp=new THREE.Eu
 function orientChild(obj,ownerRoot,yaw,pitch,roll){obj.parent.updateWorldMatrix(true,false);obj.parent.getWorldQuaternion(qTmp).invert();eTmp.set(pitch,yaw,roll,'YXZ');qTmp2.setFromEuler(eTmp);ownerRoot.getWorldQuaternion(eQ);eQ.multiply(qTmp2);obj.quaternion.copy(qTmp.multiply(eQ))}
 const eQ=new THREE.Quaternion();
 // pose: {speed, atk:0..1|-1, atkKind, block:0..1, draw:0..1, cast:0..1, air, dance, dead, sit}
-function animHuman(H,p,dt){const sp=clamp(p.speed/4,0,1.4);H.ph+=dt*(4+p.speed*2.2);const s=Math.sin(H.ph)*sp,c=Math.cos(H.ph);
+function animHuman(H,p,dt){if(H.gltf){animGltf(H,p,dt);return}const sp=clamp(p.speed/4,0,1.4);H.ph+=dt*(4+p.speed*2.2);const s=Math.sin(H.ph)*sp,c=Math.cos(H.ph);
   const L=(o,k)=>{const f=Math.min(1,dt*14);o.x=lerp(o.x,k.x||0,f);o.y=lerp(o.y,k.y||0,f);o.z=lerp(o.z,k.z||0,f)};
   if(p.dead){H.root.rotation.x=lerp(H.root.rotation.x,-Math.PI/2,Math.min(1,dt*6));H.hips.position.y=lerp(H.hips.position.y,.25,Math.min(1,dt*6));return}H.root.rotation.x=lerp(H.root.rotation.x,0,Math.min(1,dt*8));
   let lh={x:s*.7},rh={x:-s*.7},lk={x:Math.max(0,-Math.sin(H.ph))*sp*1.1},rk={x:Math.max(0,Math.sin(H.ph))*sp*1.1};

@@ -48,7 +48,7 @@ const squadCap=()=>3;
 let allies=[];
 const pcl=()=>PCLASS[P.cls];
 function recalcStats(){const c=pcl(),l=P.lvl;P.maxHp=Math.round(c.hp*(1+.06*(l-1))+P.camp.tenda*20+armorHp());P.maxMp=Math.round(c.mp*(1+.03*(l-1)));P.dmgM=1+.05*(l-1)+.08*rankIdx(l)}
-function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);H.armL.hand.add(shieldObj);auraObj=null;equipVisual();setAura()}
+function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);(H.armL.shield||H.armL.hand).add(shieldObj);auraObj=null;equipVisual();setAura()}
 function setAura(){if(auraObj)pRoot.remove(auraObj);const ri_=rankIdx(P.lvl);if(ri_<1){auraObj=null;return}auraObj=makeAura(RANKS[ri_][2]);pRoot.add(auraObj)}
 function equipVisual(){if(!H)return;for(const o of[weaponObj,weapon2])if(o&&o.parent)o.parent.remove(o);weapon2=null;const w=P.inv[P.eq];shieldObj.visible=!!pcl().shield;if(!w)return;weaponObj=makeWeaponMesh(w);
   if(w.base==='bow'){H.armL.hand.add(weaponObj);shieldObj.visible=false}else{H.armR.hand.add(weaponObj);weaponObj.rotation.x=-.25;if(w.base==='daggers'&&!pcl().shield){weapon2=makeWeaponMesh(w);weapon2.rotation.x=-.25;H.armL.hand.add(weapon2)}}}
@@ -76,7 +76,7 @@ function spawnMon(type,x,z,lvl){if(MP.client&&!MP.allowSpawn)return{dead:true,ob
 
 // ================= Allies =================
 function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
-  if(wb==='bow')h.armL.hand.add(w);else{h.armR.hand.add(w);w.rotation.x=-.25}let sh=null;if(cl.shield){sh=makeShield(d.look.shield);h.armL.hand.add(sh)}
+  if(wb==='bow')h.armL.hand.add(w);else{h.armR.hand.add(w);w.rotation.x=-.25}let sh=null;if(cl.shield){sh=makeShield(d.look.shield);(h.armL.shield||h.armL.hand).add(sh)}
   const lvl=d.lvl||1,rk_=BRAR[d.rar|0]||BRAR[0],mh=Math.round(cl.hp*.7*(1+.07*(lvl-1))*rk_.m);
   const e={kind:'ally',team:'ally',cls:d.cls,name:d.name,look:d.look,data:d,x:P.x+rr(-1,1),z:P.z+rr(-1,1),y:0,vy:0,yaw:0,hp:mh,maxHp:mh,dmg:(cl.range>3?8:10)*(1+.08*(lvl-1))*rk_.m,rar:d.rar|0,spd:5.4*cl.spd,r:.4,obj:h.root,H:h,mats:h.mats,shield:sh,weapon:w,
     cd:rr(0,1),atkT:-1,flash:0,stun:0,poly:0,bubble:0,burn:0,poison:0,slow:0,dot:0,kx:0,kz:0,down:0,abCd:rr(3,8),lvl,drawT:0,dodge:0,say:null,sayCd:rr(2,6)};

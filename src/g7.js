@@ -89,7 +89,7 @@ function remoteRec(p){let r=MP.remotes.get(p.peer);const pr=p.presence;
     MP.remotes.set(p.peer,r)}
   r.name=String(pr.n||'Amico').slice(0,14);r.cls=PCLASS[pr.c]?pr.c:'cavaliere';r.lv=pr.lv|0;
   if(pr.w!==r.w&&WT[pr.w]){if(r.wObj&&r.wObj.parent)r.wObj.parent.remove(r.wObj);r.w=pr.w;r.wObj=makeWeaponMesh({base:pr.w,rar:1,el:ELEM[pr.el]?pr.el:null});if(pr.w==='bow')r.H.armL.hand.add(r.wObj);else{r.H.armR.hand.add(r.wObj);r.wObj.rotation.x=-.25}
-    if(!r.sObj&&PCLASS[r.cls].shield){r.sObj=makeShield((pr.lk&&pr.lk.shield)|0);r.H.armL.hand.add(r.sObj)}if(r.sObj)r.sObj.visible=pr.w!=='bow'}
+    if(!r.sObj&&PCLASS[r.cls].shield){r.sObj=makeShield((pr.lk&&pr.lk.shield)|0);(r.H.armL.shield||r.H.armL.hand).add(r.sObj)}if(r.sObj)r.sObj.visible=pr.w!=='bow'}
   const pp=Array.isArray(pr.p)?pr.p:[0,0,0,0];r.tx=pp[0]/100;r.ty=pp[1]/100;r.tz=pp[2]/100;r.tyaw=pp[3]/100;if(r.first){r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw;r.first=false}
   const hp=Array.isArray(pr.hp)?pr.hp:[1,1];r.hp=+hp[0]||0;r.maxHp=Math.max(1,+hp[1]||1);r.down=r.hp<=0||!!pr.sd;r.mvS=+pr.mv||0;r.air=!!pr.ag;r.block=!!pr.bl;r.draw=(+pr.dr||0)/10;r.cast=!!pr.cs;r.dance=!!pr.dn;r.dead=false;r.ay=typeof pr.ay==='number'?pr.ay/100:null;
   if((pr.at|0)!==r.at){r.at=pr.at|0;r.atkT=0;r.atkKind=pr.ak==='t'?'thrust':pr.ak==='s'?'spin':'swing'}

@@ -292,7 +292,7 @@ const camPos=new THREE.Vector3(),camTgt=new THREE.Vector3(),hv=new THREE.Vector3
 function updCamera(dt){if(P.lock&&!P.lock.dead&&!P.autoLock)cam.yaw+=angDiff(Math.atan2(P.lock.x-P.x,P.lock.z-P.z),cam.yaw)*Math.min(1,dt*5);
   else if(isTouch&&!cam.fp&&(P.moving||0)>1&&performance.now()/1000-UX.lastLook>1.2&&!P.lock&&P.chargeRun<=0){const d=angDiff(P.yaw,cam.yaw);if(Math.abs(d)<1.9)cam.yaw+=d*Math.min(1,dt*.9)}
   const f=new THREE.Vector3(Math.sin(cam.yaw),0,Math.cos(cam.yaw)),R=new THREE.Vector3(-Math.cos(cam.yaw),0,Math.sin(cam.yaw));
-  if(cam.fp){camera.near=.05;camera.updateProjectionMatrix();H.head.visible=false;H.head.getWorldPosition(hv);const p=cam.fpPitch;camera.position.set(hv.x+f.x*.12,hv.y+.06,hv.z+f.z*.12);if(shake>0)camera.position.add(new THREE.Vector3(rr(-1,1),rr(-1,1),0).multiplyScalar(shake*.08));
+  if(cam.fp){camera.near=.05;camera.updateProjectionMatrix();H.head.visible=false;(H.eye||H.head).getWorldPosition(hv);const p=cam.fpPitch;camera.position.set(hv.x+f.x*.12,hv.y+.06,hv.z+f.z*.12);if(shake>0)camera.position.add(new THREE.Vector3(rr(-1,1),rr(-1,1),0).multiplyScalar(shake*.08));
     camTgt.copy(camera.position).add(new THREE.Vector3(f.x*Math.cos(p),-Math.sin(p),f.z*Math.cos(p)));camera.lookAt(camTgt);return}
   camera.near=.1;camera.updateProjectionMatrix();H.head.visible=true;const tgt=new THREE.Vector3(P.x,P.y+1.55,P.z).addScaledVector(R,.55);const back=cam.dist*Math.cos(cam.pitch),up=cam.dist*Math.sin(cam.pitch);
   const want=tgt.clone().addScaledVector(f,-back).add(new THREE.Vector3(0,up,0));let tt=1;for(let s=1;s<=20;s++){const k=s/20,x=lerp(tgt.x,want.x,k),y=lerp(tgt.y,want.y,k),z=lerp(tgt.z,want.z,k);const gh_=groundH(x,z),top=gh_>50?WALLH:gh_;if(top>y-.3){tt=Math.max(.15,(s-1)/20);break}}

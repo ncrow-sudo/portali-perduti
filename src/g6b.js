@@ -94,7 +94,8 @@ function drawBoard(){const T=$('shopTabs');T.innerHTML='';for(const[k,l]of[['bui
     P.army.forEach((d,i)=>{const a=allies.find(x=>x.data===d),R=BRAR[d.rar|0];L.appendChild(row(iconBox(R.c),d.name,R.c,botLabel(d)+(a?` · vita ${Math.ceil(a.hp)} / ${a.maxHp}`:''),[['Congeda',()=>{P.army.splice(i,1);resetSquad();saveGame();drawBoard()},false,true]]))})}}
 function cycleOrder(){order=order==='segui'?'attacca':order==='attacca'?'fermi':'segui';toast(`Ordine all'esercito: ${ORD[order]}`);sfx('beep');renderParty()}
 // settings
-function openSet(){if(mode!=='play')return;for(const k of['mus','sfx','amb']){const id='vol'+k[0].toUpperCase()+k.slice(1);$(id).value=VOL[k];$(id+'V').textContent=VOL[k]}openScreen('scSet')}
+function openSet(){if(mode!=='play')return;for(const k of['mus','sfx','amb']){const id='vol'+k[0].toUpperCase()+k.slice(1);$(id).value=VOL[k];$(id+'V').textContent=VOL[k]}drawModelPills();openScreen('scSet')}
+function drawModelPills(){pills($('optModels'),[['nuovi','Nuovi'],['classici','Classici']],GLB.on?'nuovi':'classici',v=>{GLB.on=v==='nuovi';store.set('pp_gltf',GLB.on);buildPlayer();drawModelPills()})}
 for(const k of['mus','sfx','amb']){const id='vol'+k[0].toUpperCase()+k.slice(1);$(id).addEventListener('input',e=>{VOL[k]=+e.target.value;$(id+'V').textContent=VOL[k];store.set('pp5_vol',VOL);setVol();if(k==='sfx')sfx('coin')})}
 $('btnCloseSet').onclick=closeScreens;$('bSet').onclick=openSet;
 
@@ -174,7 +175,7 @@ function startNew(){P.name=($('avName').value||'Esploratore').trim().slice(0,14)
   renderSlots();setAbilityUI();if(MP.after){MP.after=false;mode='menu';saveGame();openLobby();return}mode='play';startCamp();saveGame();showTouch();
   banner(`Benvenuto, ${P.name}`,`${pcl().n.toUpperCase()} · RANGO LEGNO`,2600);setTimeout(coachStart,3200);setTimeout(()=>toast(`${buddy.name} il ${PCLASS[buddy.cls].n} viaggerà con te. Prova l'abilità ${pcl().abN} (${isTouch?'tasto viola':'X'}) sul manichino`),2800)}
 $('avGo').onclick=()=>{audioInit();if(avStep<2){avStep++;drawAvatarUI();$('scAvatar').scrollTop=0;return}startNew()};
-$('btnCont').onclick=()=>{audioInit();if(!loadGame())return;$('scTitle').hidden=true;mode='play';equipVisual();renderSlots();setAbilityUI();startCamp();showTouch();banner(`Bentornato, ${P.name}`,'IL PORTALE TI PORTA AL PIANO '+Math.max(1,checkpoint),2600)};
+$('btnCont').onclick=()=>{if(!GLB.ready&&!GLB.failed){GLB.whenReady(()=>$('btnCont').click());return}audioInit();if(!loadGame())return;$('scTitle').hidden=true;mode='play';equipVisual();renderSlots();setAbilityUI();startCamp();showTouch();banner(`Bentornato, ${P.name}`,'IL PORTALE TI PORTA AL PIANO '+Math.max(1,checkpoint),2600)};
 const sv=store.get('pp5_save',null);if(sv&&sv.look){$('btnCont').hidden=false;$('btnCont').textContent=`Continua · ${sv.name||'Esploratore'} · liv ${sv.lvl||1} · piano ${Math.max(1,sv.cp||1)}`}
 $('recTxt').textContent=best?`Record: piano ${best}`:'Nessun record ancora';
 
@@ -199,4 +200,6 @@ function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;autoQuality(dt
   if(RAINBOW.length){const hh=(now/2500)%1;for(const m of RAINBOW){m.color.setHSL(hh,.9,.62);if(m.emissive)m.emissive.setHSL(hh,.9,.2)}}
   renderer.render(scene,camera);drawOverlay();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
-window.__ready=true;{const b=$('btnNew');b.disabled=false;b.textContent='Nuova avventura'}
+glbLoad();GLB.whenReady(()=>{window.__ready=true;const b=$('btnNew');b.disabled=false;b.textContent='Nuova avventura';
+  // se il giocatore era già stato costruito col modello vecchio (ingresso veloce da QR), lo ricostruiamo
+  if(typeof H!=='undefined'&&H&&!H.gltf&&P.look&&GLB.has(P.cls))buildPlayer()});

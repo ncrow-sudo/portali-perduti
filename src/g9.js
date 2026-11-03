@@ -11,7 +11,7 @@ function rollArmorTier(fl,b=0){let t=Math.floor(fl*.45+rr(-1.2,1.4)+b);t=clamp(t
 function armorEq(){return P.armors&&P.armors.find(a=>a.id===P.armorEq)||null}
 function armorDef(){const a=armorEq();return a?ARM[a.t].def:0}
 function armorHp(){const a=armorEq();return a?ARM[a.t].hp:0}
-function applyArmorVisual(Hh,t){if(!Hh)return;const rm=[];Hh.root.traverse(o=>{if(o.userData.armor)rm.push(o)});rm.forEach(o=>o.parent&&o.parent.remove(o));if(t==null||t<0)return;
+function applyArmorVisual(Hh,t){if(!Hh)return;const rm=[];Hh.root.traverse(o=>{if(o.userData.armor)rm.push(o)});rm.forEach(o=>o.parent&&o.parent.remove(o));if(t==null||t<0)return;if(Hh.gltf){applyArmorGltf(Hh,t);return}
   const m=armorMat(t),bw=Hh.bw||1,add=(par,o)=>{o.userData.armor=1;par.add(o);return o};
   add(Hh.torso,mesh(box(.38*bw,.32,.07),m,0,.42,.165*bw));add(Hh.torso,mesh(box(.36*bw,.3,.06),m,0,.42,-.165*bw));add(Hh.torso,mesh(cyl(.19*bw,.18*bw,.08,12),m,0,.22,0));
   for(const a of[Hh.armL,Hh.armR]){const p=add(a.sh,mesh(new THREE.SphereGeometry(.12*bw,10,8,0,Math.PI*2,0,Math.PI/2),m,0,.04,0));p.scale.set(1.2,.85,1.15);add(a.el,mesh(cyl(.062,.058,.15,8),m,0,-.17,0))}
