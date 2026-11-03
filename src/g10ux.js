@@ -48,3 +48,8 @@ function coachShow(){const s=COACH[UX.coachStep];if(!s){$('coach').hidden=true;U
   Object.assign(ring.style,{left:(x-rad)+'px',top:(y-rad)+'px',width:rad*2+'px',height:rad*2+'px'});$('coachT').textContent=s.t;$('coachD').textContent=s.d;
   const tw=Math.min(300,innerWidth*.7);let tx=x<innerWidth/2?x+rad+16:x-rad-16-tw,ty=Math.max(12,Math.min(innerHeight-170,y-60));if(tx<12)tx=12;Object.assign(tip.style,{left:tx+'px',top:ty+'px',width:tw+'px'})}
 $('coachNext').onclick=()=>{UX.coachStep++;coachShow()};
+
+// full screen: Android/desktop via the Fullscreen API on the first tap; iPhone only from the Home Screen icon
+function goFull(){if(!isTouch||!window.PP_SITE)return;const d=document.documentElement;try{if(!document.fullscreenElement&&d.requestFullscreen){const p=d.requestFullscreen({navigationUI:'hide'});if(p&&p.then)p.then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}}catch(e){}}
+['btnNew','btnCont','btnMP'].forEach(id=>{const b=$(id);if(b)b.addEventListener('click',goFull,true)});
+(()=>{const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),standalone=navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;if(ios&&!standalone&&window.PP_SITE)$('homeTip').hidden=false})();
