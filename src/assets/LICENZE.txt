@@ -1,4 +1,6 @@
 Modelli 3D dei personaggi
-- cavaliere.glb: dal pacchetto "KayKit: Adventurers Character Pack 1.0" di Kay Lousberg (www.kaylousberg.com),
+- cavaliere.glb (Knight), mago.glb (Mage), arciere.glb (Rogue), assassino.glb (Rogue_Hooded), fabbro.glb (Barbarian)
+  e animazioni.glb: dal pacchetto "KayKit: Adventurers Character Pack 1.0" di Kay Lousberg (www.kaylousberg.com),
   licenza Creative Commons Zero (CC0): http://creativecommons.org/publicdomain/zero/1.0/
-  Ridotto con tools/prepara_modelli.mjs (solo le animazioni usate, senza armi e scudi del pacchetto).
+  Ridotti con tools/prepara_modelli.mjs: un file per classe senza animazioni, armi e scudi del pacchetto,
+  e un file con le 18 animazioni usate dal gioco (lo scheletro è lo stesso per tutti).

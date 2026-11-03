@@ -3,14 +3,15 @@
 //   git clone --depth 1 https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 /tmp/kaykit
 //   npm i --no-save @gltf-transform/core@4.1.1 @gltf-transform/functions@4.1.1
 //   node tools/prepara_modelli.mjs /tmp/kaykit [cartella di uscita, di default src/assets]
-// Scrive src/assets/<classe>.glb: mesh, scheletro e solo le animazioni usate dal gioco.
+// Scrive src/assets/<classe>.glb (mesh e scheletro, senza animazioni) e src/assets/animazioni.glb
+// (solo le animazioni usate dal gioco, prese dal cavaliere: lo scheletro è lo stesso per tutti).
 import { NodeIO } from '@gltf-transform/core';
 import { prune, resample, dedup } from '@gltf-transform/functions';
 import path from 'path';
 
 const SRC = path.join(process.argv[2] || '/tmp/kaykit', 'addons/kaykit_character_pack_adventures/Characters/gltf');
 const OUT = process.argv[3] || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'src', 'assets');
-const CLASSES = { cavaliere: 'Knight' };
+const CLASSES = { cavaliere: 'Knight', mago: 'Mage', arciere: 'Rogue', assassino: 'Rogue_Hooded', fabbro: 'Barbarian', animazioni: 'Knight' };
 const KEEP = new Set(['Idle', 'Walking_A', 'Running_A', 'Jump_Idle', 'Jump_Land', 'Dodge_Forward', 'Hit_A', 'Death_A', 'Cheer', 'Sit_Floor_Idle',
   '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Stab', '1H_Melee_Attack_Chop', '2H_Melee_Attack_Spin', 'Dualwield_Melee_Attack_Slice',
   'Blocking', '2H_Ranged_Aiming', 'Spellcast_Shoot']);
@@ -23,8 +24,10 @@ for (const [cls, file] of Object.entries(CLASSES)) {
   const root = doc.getRoot();
   // armi e scudi del pacchetto: il gioco usa i suoi (rarità, elementi), quindi li togliamo
   for (const n of root.listNodes()) if (/^handslot\./.test(n.getName())) for (const c of n.listChildren()) { c.getMesh() && c.getMesh().dispose(); c.dispose(); }
+  const anim = cls === 'animazioni';
+  if (anim) for (const m of root.listMeshes()) m.dispose(); // solo scheletro e animazioni
   for (const a of root.listAnimations()) {
-    if (!KEEP.has(a.getName())) { a.dispose(); continue; }
+    if (!anim || !KEEP.has(a.getName())) { a.dispose(); continue; }
     for (const ch of a.listChannels()) {
       const n = ch.getTargetNode(), p = ch.getTargetPath();
       // teniamo solo le rotazioni (e la traslazione dei fianchi per il molleggio)

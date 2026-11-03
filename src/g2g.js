@@ -1,30 +1,36 @@
 // ================= Personaggi glTF (KayKit Adventurers 1.0, CC0, Kay Lousberg) =================
 // I modelli sono in src/assets (preparati con tools/prepara_modelli.mjs). Se non si caricano, si usa il personaggio procedurale.
 // Interfaccia uguale a makeHumanoid: root, head, torso, armL/armR.hand, mats, bw. In più: gltf=true e lo stato del mixer.
-const GLB={on:store.get('pp_gltf',true),src:{},ready:false,failed:false,cbs:[],
+const GLB={on:store.get('pp_gltf',true),src:{},clips:null,ready:false,failed:false,cbs:[],
   has(c){return this.on&&this.ready&&!!this.src[c]},whenReady(f){if(this.ready||this.failed)f();else this.cbs.push(f)}};
 try{if(/[?&]classico\b/.test(location.search))GLB.on=false}catch(e){}
-const GLB_FILES={cavaliere:'cavaliere'};
+// un file per classe (solo mesh e scheletro) e uno con le animazioni, condivise perché lo scheletro è lo stesso
+const GLB_CLASSES=['cavaliere','mago','arciere','assassino','fabbro'];
 const GLB_H=1.95; // altezza in unità del procedurale (prima della scala .93)
 const GLB_UPPER=new Set(['spine','chest','head','upperarml','lowerarml','wristl','handl','handslotl','upperarmr','lowerarmr','wristr','handr','handslotr']);
 function glbDone(){const c=GLB.cbs;GLB.cbs=[];c.forEach(f=>{try{f()}catch(e){console.warn(e)}})}
+function glbFetch(ld,f){return new Promise(res=>{const ko=e=>{console.warn('glb',f,e);res(null)};
+  const emb=window.PP_GLB&&window.PP_GLB[f];
+  if(emb){try{const s=atob(emb),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);ld.parse(u.buffer,'',res,ko)}catch(e){ko(e)}}
+  else ld.load('assets/'+f+'.glb',res,undefined,ko)})}
+// prima animazioni e classi che servono subito (sblocca il menu), poi le altre in sottofondo
 function glbLoad(){
-  if(!window.THREE||!THREE.GLTFLoader||!THREE.SkeletonUtils){GLB.failed=true;glbDone();return}
-  const ld=new THREE.GLTFLoader();
-  const jobs=Object.entries(GLB_FILES).map(([cls,f])=>new Promise(res=>{
-    const ok=g=>{try{glbPrep(cls,g)}catch(e){console.warn('glb',f,e)}res()},ko=e=>{console.warn('glb',f,e);res()};
-    const emb=window.PP_GLB&&window.PP_GLB[f];
-    if(emb){try{const s=atob(emb),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);ld.parse(u.buffer,'',ok,ko)}catch(e){ko(e)}}
-    else ld.load('assets/'+f+'.glb',ok,undefined,ko)}));
+  if(!GLB.on||!window.THREE||!THREE.GLTFLoader||!THREE.SkeletonUtils){GLB.failed=true;glbDone();return}
+  const ld=new THREE.GLTFLoader(),sv=store.get('pp5_save',null);
+  // subito: la classe salvata, quelle dei compagni salvati, e cavaliere e mago (giocatore e compagno di una partita nuova)
+  const need=[sv&&sv.cls,...((sv&&Array.isArray(sv.army))?sv.army.map(d=>d&&d.cls):[]),'cavaliere','mago'].filter((c,i,a)=>GLB_CLASSES.includes(c)&&a.indexOf(c)===i);
+  const one=c=>glbFetch(ld,c).then(g=>{if(g)try{glbPrep(c,g)}catch(e){console.warn('glb',c,e)}});
   const to=setTimeout(()=>{if(!GLB.ready){GLB.failed=true;glbDone()}},10000);
-  Promise.all(jobs).then(()=>{clearTimeout(to);GLB.ready=true;glbDone()})}
+  glbFetch(ld,'animazioni').then(g=>{if(!g)throw 0;glbClips(g.animations);return Promise.all(need.map(one))})
+    .then(()=>{clearTimeout(to);GLB.ready=true;glbDone();return Promise.all(GLB_CLASSES.filter(c=>!GLB.src[c]).map(one))})
+    .catch(()=>{clearTimeout(to);GLB.failed=true;glbDone()})}
+function glbClips(list){const clips={};
+  for(const c of list){clips[c.name]=c;const up=c.tracks.filter(t=>GLB_UPPER.has(t.name.split('.')[0]));clips[c.name+'#up']=new THREE.AnimationClip(c.name+'#up',c.duration,up)}
+  GLB.clips=clips}
 function glbPrep(cls,g){
   const scene=g.scene;scene.updateMatrixWorld(true);let top=0;
   scene.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;if(!n.geometry.boundingBox)n.geometry.computeBoundingBox();top=Math.max(top,n.geometry.boundingBox.max.y)}});
-  const clips={};
-  for(const c of g.animations){clips[c.name]=c;
-    const up=c.tracks.filter(t=>GLB_UPPER.has(t.name.split('.')[0]));clips[c.name+'#up']=new THREE.AnimationClip(c.name+'#up',c.duration,up)}
-  GLB.src[cls]={scene,clips,k:GLB_H/Math.max(1,top)}}
+  GLB.src[cls]={scene,k:GLB_H/Math.max(1,top)}}
 
 // socket: gruppo figlio di un osso, con gli assi del modello in posa di riposo e misure in metri come il procedurale
 function glbSock(bone,k,rot){const g=new THREE.Group();bone.add(g);
@@ -37,7 +43,7 @@ function makeGltfHuman(L,scale,o){
   inner.scale.setScalar(S.k);inner.add(model);root.add(inner);root.scale.setScalar(.93*scale);
   const mats=[],headMeshes=[],fpHide=[];
   model.traverse(n=>{if(!n.isMesh)return;n.material=n.material.clone();mats.push(n.material);n.frustumCulled=false;
-    if(/_Head$/.test(n.name)){headMeshes.push(n);
+    if(/_Head(_Hooded)?$/.test(n.name)){headMeshes.push(n);
       // tinta della pelle scelta nell'avatar, relativa alla pelle più chiara (quella della texture)
       if(L&&LOOK.skin[L.skin]){const a=new THREE.Color(LOOK.skin[L.skin]),b=new THREE.Color(LOOK.skin[0]);n.material.color.setRGB(Math.min(1,a.r/b.r),Math.min(1,a.g/b.g),Math.min(1,a.b/b.b))}}
     if(/_(Cape|ArmLeft|ArmRight)$/.test(n.name))fpHide.push(n);
@@ -53,7 +59,7 @@ function makeGltfHuman(L,scale,o){
   // punto degli occhi per la prima persona (la testa del modello è grande, l'osso è al collo)
   const eye=new THREE.Object3D();eye.position.set(0,.42,.12);sock.head.add(eye);
   const mixer=new THREE.AnimationMixer(model),acts={};
-  const act=n=>{if(acts[n])return acts[n];const c=S.clips[n];if(!c)return null;const a=mixer.clipAction(c);a.enabled=true;a.setEffectiveWeight(0);a.play();acts[n]=a;a.userData={w:0};return a};
+  const act=n=>{if(acts[n])return acts[n];const c=GLB.clips[n];if(!c)return null;const a=mixer.clipAction(c);a.enabled=true;a.setEffectiveWeight(0);a.play();acts[n]=a;a.userData={w:0};return a};
   const H={gltf:true,cls:o.cls,root,inner,model,hips:B('hips'),torso:chest,spine,head,
     armL:{hand:handL,shield:shieldL},armR:{hand:handR},eye,fpHide,mats,bw:1,ph:Math.random()*6,mixer,act,acts,sock,k:S.k,t:Math.random()*5,lastAtk:-1,castOn:0};
   for(const n of['Idle','Walking_A','Running_A'])act(n);
