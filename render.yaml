@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: portali-perduti
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
