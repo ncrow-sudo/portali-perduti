@@ -72,7 +72,7 @@ function spawnMon(type,x,z,lvl){if(MP.client&&!MP.allowSpawn)return{dead:true,ob
   const e={kind:'mon',team:'enemy',type,n:d.n,x,z,y:0,vy:0,yaw:rr(0,6),cd:rr(.8,2),wind:0,flash:0,stun:0,poly:0,bubble:0,burn:0,poison:0,slow:0,dot:0,kx:0,kz:0,aggro:false,hpShow:0,ph:rr(0,6),
     hp:Math.round(d.hp*k),dmg:Math.round(d.dmg*kd),spd:d.spd,r:d.r,beh:d.beh,fly:!!d.fly,fire:d.fire,xp:Math.round(d.xp*(1+.15*(lvl-1))),gold:d.gold,boss:!!d.boss,elite:!!d.elite,mimic:!!d.mimic,obj:m.g,mats:m.mats,m,H:m.H,special:3,orbit:Math.random()<.5?1:-1};
   if(type==='monkey'){const tail=mesh(new THREE.TorusGeometry(.25,.04,6,12,Math.PI*1.4),std({color:0x5a3a1e}),0,.9,-.25);tail.rotation.y=Math.PI/2;m.g.add(tail)}
-  e.maxHp=e.hp;e.mid=++MP.midC;e.obj.position.set(x,0,z);return addEnt(e)}
+  e.maxHp=e.hp;e.mid=++MP.midC;e.room=LV&&!LV.camp?LV.room[tileAt(x,z)]:-1;e.obj.position.set(x,0,z);return addEnt(e)}
 
 // ================= Allies =================
 function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
@@ -106,7 +106,7 @@ function banner(big,small,ms=2200){const b=$('banner');b.innerHTML='';const s=do
 function showCombo(){const c=$('combo');if(P.combo>=3){c.innerHTML='';const s=document.createElement('small');s.textContent='COMBO';c.append(s,document.createTextNode('x'+P.combo));c.style.opacity=1}else c.style.opacity=0}
 let freeze=0,shake=0,hurtT=0;
 function gainXP(n){if(P.lvl>=50)return;P.xp+=n;let up=false,rankUp=false;while(P.lvl<50&&P.xp>=xpNeed(P.lvl)){P.xp-=xpNeed(P.lvl);const r0=rankIdx(P.lvl);P.lvl++;up=true;if(rankIdx(P.lvl)>r0)rankUp=true}
-  if(up){recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){setAura();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
+  if(up){vib([60,40,60]);recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){setAura();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
 function allyXP(n){for(const a of allies){const d=a.data;d.xp=(d.xp||0)+n;if(d.xp>=xpNeed(d.lvl)*.8&&d.lvl<50){d.xp=0;d.lvl++;a.lvl=d.lvl;a.maxHp=Math.round(PCLASS[a.cls].hp*.7*(1+.07*(d.lvl-1))*(BRAR[d.rar|0]||BRAR[0]).m);a.hp=a.maxHp;a.dmg*=1.08;float(a.x,a.y+2.3,a.z,`${a.name} liv. ${d.lvl}`,'#7be36b');say(a,'level')}}}
 
 // ================= Combat =================
@@ -133,7 +133,7 @@ function killEnt(e,w,src){if(e.dead||e.ghost)return;e.dead=true;stats.kills++;bu
 function hurtPlayer(d,src,force){if(mode!=='play'||P.falling>0||P.mpDown>0)return false;if(!force&&(P.iT>0||P.dashT>0||P.chargeRun>0))return false;
   if(P.block&&src&&!force){const ang=Math.atan2(src.x-P.x,src.z-P.z),diff=Math.abs(angDiff(ang,P.yaw)),sh=!!pcl().shield;if(diff<1.25){if(sh&&performance.now()/1000-P.blockT<.28){sfx('parry');float(P.x,P.y+2.2,P.z,'PARATA!','#7fe3ff',1);if(src.kind==='mon'&&!src.boss)src.stun=1.4;burst(P.x+Math.sin(P.yaw)*.6,P.y+1.2,P.z+Math.cos(P.yaw)*.6,'#ffffff',14,3);freeze=.08;return false}
     d*=sh?.15:.5;sfx('block');burst(P.x+Math.sin(P.yaw)*.6,P.y+1.2,P.z+Math.cos(P.yaw)*.6,'#ffe0a0',6,2)}}
-  d=Math.max(1,Math.round(d*(1-armorDef())));P.hp-=d;P.iT=.4;hurtT=.35;shake=Math.max(shake,.25);sfx('hurt');P.combo=0;showCombo();float(P.x,P.y+2.1,P.z,'-'+d,'#ff6b5a');if(P.hp<=0)die();return true}
+  d=Math.max(1,Math.round(d*(1-armorDef())));P.hp-=d;vib(35);P.iT=.4;hurtT=.35;shake=Math.max(shake,.25);sfx('hurt');P.combo=0;showCombo();float(P.x,P.y+2.1,P.z,'-'+d,'#ff6b5a');if(P.hp<=0)die();return true}
 function hurtTarget(t,d,src){if(t===P)return hurtPlayer(d,src);if(t.kind==='remote')return mpHurtRemote(t,d);if(t.kind==='turret'){t.hp-=d;return true}hitEnt(t,d,{});return true}
 let DROPS=[];const coinGeo=cyl(.12,.12,.04,10);coinGeo.rotateX(Math.PI/2);
 function dropGold(x,z,n){const per=Math.max(1,Math.ceil(n/4));for(let i=0;i<Math.min(4,n);i++)DROPS.push(makeDrop(x,z,'gold',per))}

@@ -105,9 +105,9 @@ sky.renderOrder=-1;scene.add(sky);
 let dayT=.3;const DAYLEN=420;
 const WEATHER={sereno:{cloud:.05,rain:0,snow:0,fog:0,storm:0,n:'Sereno'},nuvoloso:{cloud:.6,rain:0,snow:0,fog:.15,storm:0,n:'Nuvoloso'},pioggia:{cloud:.85,rain:1,snow:0,fog:.25,storm:0,n:'Pioggia'},
   temporale:{cloud:1,rain:1,snow:0,fog:.3,storm:1,n:'Temporale'},nebbia:{cloud:.5,rain:0,snow:0,fog:1,storm:0,n:'Nebbia'},neve:{cloud:.65,rain:0,snow:1,fog:.3,storm:0,n:'Neve'}};
-const Wc={cloud:.05,rain:0,snow:0,fog:0,storm:0};let wName='sereno',wTimer=50,snowCover=0,wetness=0,flashT=0,nextBolt=8;
+const Wc={cloud:.05,rain:0,snow:0,fog:0,storm:0};let wFast=0;const FOGC=new THREE.Color(0x9fbfa0);let wName='sereno',wTimer=50,snowCover=0,wetness=0,flashT=0,nextBolt=8;
 function setWeather(n,instant){wName=n;if(instant)Object.assign(Wc,WEATHER[n]);wTimer=rr(70,120);$('clock')&&updClock()}
-function chooseWeather(){const bw=typeof LV!=='undefined'&&LV&&!LV.camp&&LV.biome&&BIOMES[LV.biome]?BIOMES[LV.biome].wx:null;let opts=(bw||[['sereno',4],['nuvoloso',2.2],['pioggia',1.1],['temporale',.6],['nebbia',1.3],['neve',1]]).filter(o=>o[0]!==wName);if(!opts.length)opts=[['sereno',1]];let s=opts.reduce((a,o)=>a+o[1],0)*Math.random();for(const o of opts){s-=o[1];if(s<=0)return o[0]}return'sereno'}
+function chooseWeather(){const lb=typeof LV!=='undefined'&&LV&&!LV.camp?(LV.curBiome||LV.biome):null,bw=lb&&BIOMES[lb]?BIOMES[lb].wx:null;let opts=(bw||[['sereno',4],['nuvoloso',2.2],['pioggia',1.1],['temporale',.6],['nebbia',1.3],['neve',1]]).filter(o=>o[0]!==wName);if(!opts.length)opts=[['sereno',1]];let s=opts.reduce((a,o)=>a+o[1],0)*Math.random();for(const o of opts){s-=o[1];if(s<=0)return o[0]}return'sereno'}
 const night=()=>{const e=Math.sin((dayT-.25)*Math.PI*2);return clamp(-e*4+.3,0,1)};
 function phaseName(){const e=Math.sin((dayT-.25)*Math.PI*2);if(e>.25)return'Giorno';if(e>-.08)return dayT<.5?'Alba':'Tramonto';return'Notte'}
 function updClock(){$('clock').textContent=`${phaseName()} · ${WEATHER[wName].n}`}
@@ -116,12 +116,12 @@ const SKYC={dayTop:C3(0x3d82d6),dayHor:C3(0xcfe8d0),setTop:C3(0x4a4e8e),setHor:C
 const tmpC=new THREE.Color(),tmpC2=new THREE.Color();
 function updSky(dt,focus){dayT=(dayT+dt/DAYLEN)%1;skyU.time.value+=dt;
   wTimer-=dt;if(wTimer<=0){setWeather(chooseWeather());if(mode==='play')toast(`Il tempo cambia: ${WEATHER[wName].n.toLowerCase()}`)}
-  const tg=WEATHER[wName],k=Math.min(1,dt*.18);for(const key of['cloud','rain','snow','fog','storm'])Wc[key]=lerp(Wc[key],tg[key],k);
+  wFast=Math.max(0,wFast-dt);const tg=WEATHER[wName],k=Math.min(1,dt*(wFast>0?.9:.18));for(const key of['cloud','rain','snow','fog','storm'])Wc[key]=lerp(Wc[key],tg[key],k);
   snowCover=clamp(snowCover+(Wc.snow>.5?dt*.03:-dt*.05),0,1);wetness=clamp(wetness+(Wc.rain>.5?dt*.08:-dt*.03),0,1);
   const ang=(dayT-.25)*Math.PI*2,el=Math.sin(ang),dayK=clamp(el*3+.2,0,1),setK=clamp(1-Math.abs(el)*5,0,1)*(el>-.2?1:0),nk=night();
   const sd=new THREE.Vector3(Math.cos(ang)*.85,el,.4).normalize();skyU.sunDir.value.copy(sd);
   const top=tmpC.copy(SKYC.nightTop).lerp(SKYC.dayTop,dayK).lerp(SKYC.setTop,setK*.6),hor=tmpC2.copy(SKYC.nightHor).lerp(SKYC.dayHor,dayK).lerp(SKYC.setHor,setK*.75);
-  top.lerp(SKYC.grayTop,Wc.cloud*.7*dayK);hor.lerp(SKYC.grayHor,Wc.cloud*.6*dayK);hor.lerp(C3(0xbfc8c0),Wc.fog*.5*(1-nk*.8));if(typeof LV!=='undefined'&&LV&&LV.fogTint&&mode==='play')hor.lerp(C3(LV.fogTint),.35*dayK);
+  top.lerp(SKYC.grayTop,Wc.cloud*.7*dayK);hor.lerp(SKYC.grayHor,Wc.cloud*.6*dayK);hor.lerp(C3(0xbfc8c0),Wc.fog*.5*(1-nk*.8));if(typeof LV!=='undefined'&&LV&&LV.fogTint&&mode==='play'){FOGC.lerp(C3(LV.fogTint),Math.min(1,dt*1.2));hor.lerp(FOGC,.35*dayK)}
   skyU.top.value.copy(top);skyU.hor.value.copy(hor);skyU.sunCol.value.setRGB(1.6,1.3+dayK*.2-setK*.4,1-setK*.5).multiplyScalar(dayK*(1-Wc.cloud*.8));
   skyU.stars.value=nk*(1-Wc.cloud);skyU.cloud.value=Wc.cloud;
   // lights

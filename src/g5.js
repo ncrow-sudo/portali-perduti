@@ -47,7 +47,7 @@ function startCamp(){resetRun();floor=0;genCampLevel();buildLevel();const cx=11*
   const bk=makeBasket();bk.g.position.set(cx-3,0,cz+3);world.add(bk.g);addInter({kind:'basket',x:cx-3,z:cz+3,y:0,lid:bk.lid,safe:true,crab:false,obj:bk.g});
   const reserve=P.army.filter(d=>!d.squad);reserve.slice(0,8).forEach((d,i)=>{const h=makeHumanoid(d.look,1,{cls:d.cls});const a=i/8*Math.PI*2;h.root.position.set(cx+Math.cos(a)*4.2,0,cz+Math.sin(a)*4.2);h.root.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));world.add(h.root);ANIM.push(dt=>{animHuman(h,{speed:0,sit:true},dt);return true})});
   (MP.on?(()=>{const a_=Math.random()*6.28;placeP(cx+Math.cos(a_)*2.4,cz+5+Math.sin(a_)*1.6,Math.PI)})():placeP(cx,cz+5,Math.PI));respawnAllies();placePet();computePD();music.setMood('camp');updClock();updHud();updMission()}
-function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giungla',type:'battaglia',id:'x'+n,L:n};genDungeon(n,node);buildLevel();const R=LV.R,BI=BIOMES[LV.biome]||BIOMES.giungla;setWeather(chooseWeather(),true);
+function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giungla',type:'battaglia',id:'x'+n,L:n};genDungeon(n,node);buildLevel();const R=LV.R,BI=BIOMES[LV.biome]||BIOMES.giungla;LV.curBiome=(LV.path&&LV.path[0]&&LV.path[0].biome)||LV.biome;LV.lastRid=-1;LV.locked=null;LV.cleared={};setWeather(chooseWeather(),true);
   const tilesOf=r=>{const t=[];for(let j=r.z0;j<r.z0+7;j++)for(let i=r.x0;i<r.x0+7;i++){const k=tIdx(i,j);if(LV.tile[k]===0&&!LV.ramp[k]&&!LV.plate[k])t.push([i,j])}return t};
   const POOL={funghi:['fungo','fungo','fatuo','ragno'],rovine:['fungo','draghetto','ragno','golem'],tempio:['golem','ragno','fatuo'],villaggio:['fungo','draghetto','fungo'],giardino:['pianta','fungo','fatuo'],lago:['fatuo','draghetto'],ponte:['fatuo','ragno']};
   for(const r of R){const c=W2(r.x0+3,r.z0+3),tl=sshuffle(tilesOf(r).filter(([i,j])=>Math.abs(i-r.x0-3)+Math.abs(j-r.z0-3)>1));
@@ -72,7 +72,7 @@ function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giu
     if(r.leverFor!=null){const g=GATES[r.leverFor],k=g.tiles[0],i=k%LV.gw,j=(k/LV.gw)|0;const lv=makeLever();let x,z,ry;if(g.dx){x=(i+.5+g.dx*.55)*TS;z=(j-1+.5)*TS;ry=g.dx>0?Math.PI/2:-Math.PI/2}else{x=(i-1+.5)*TS;z=(j+.5+g.dz*.55)*TS;ry=g.dz>0?0:Math.PI}
       lv.g.position.set(x,1.5,z);lv.g.rotation.y=ry;world.add(lv.g);addInter({kind:'lever',x:x+(g.dx||0)*.6,z:z+(g.dz||0)*.6,y:0,piv:lv.piv,gate:r.leverFor})}
     if(!['start','merchant','vault','portal'].includes(r.type)){const quiet=Math.random()<(n<=2?.3:.18);let cnt=quiet?0:Math.round(((n<=2?ri(1,2):ri(2,3)+Math.floor(n/5))+(night()>.5&&Math.random()<.4?1:0))*DIFF.cnt);cnt=Math.min(Math.round(2+DIFF.cnt*1.5),Math.round(cnt*(node.type==='tesoro'?.5:node.type==='mercante'?.6:1)));
-      const pool=Math.random()<.65?BI.pool:(POOL[r.theme]||POOL.rovine);for(let q=0;q<cnt&&tl.length;q++){const[i,j]=tl.pop(),p=W2(i,j);spawnMon(pick(pool),p.x,p.z,n)}}}
+      const pool=Math.random()<.65?(BIOMES[r.biome]||BI).pool:(POOL[r.theme]||POOL.rovine);for(let q=0;q<cnt&&tl.length;q++){const[i,j]=tl.pop(),p=W2(i,j);spawnMon(pick(pool),p.x,p.z,n)}}}
   const rooms=sshuffle(R.filter(r=>!['start','portal','vault','ponte'].includes(r.type)));for(let i=0;i<Math.min(rooms.length,3+Math.floor(n/2));i++){const t=tilesOf(rooms[i]);if(!t.length)continue;const[a,b]=pick(t),p=W2(a,b);mkBasket(p.x,p.z,!MP.client&&Math.random()<.55)}
   {const mid=(LV.path||[]).slice(1,-1);if(node.type==='elite'&&mid.length){const r=pick(mid),p=W2(r.x0+2,r.z0+2);spawnMon('golemAntico',p.x,p.z,n)}
     if(node.type==='tesoro')for(let q=0;q<3&&mid.length;q++){const r=pick(mid),t=tilesOf(r);if(t.length){const[a,b]=pick(t),p=W2(a,b);mkChest(p.x,p.z,true)}}
@@ -82,6 +82,21 @@ function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giu
   music.setMood('explore');if(isCp&&n>1)music.stinger('checkpoint');updHud();updClock();updMission()}
 function mkChest(x,z,bonus){const c=makeChest();c.g.position.set(x,groundH(x,z),z);c.g.rotation.y=rr(-.4,.4);world.add(c.g);addInter({kind:'chest',x,z,y:groundH(x,z),lid:c.lid,bonus})}
 function mkBasket(x,z,crab){const b=makeBasket();b.g.position.set(x,groundH(x,z),z);world.add(b.g);const it=addInter({kind:'basket',x,z,y:groundH(x,z),lid:b.lid,crab,obj:b.g,t:rr(0,4)});if(crab)ANIM.push(dt=>{if(it.used)return false;it.t+=dt;b.g.rotation.z=(it.t%4)<.3?Math.sin(it.t*60)*.06:0;return true})}
+
+// ================= Chambers: every room a new world, doors lock until it's cleared =================
+function enemiesIn(rid){return ENT.filter(e=>!e.dead&&e.team==='enemy'&&!e.ghost&&LV.room[tileAt(e.x,e.z)]===rid)}
+function enterBiome(b){LV.curBiome=b;const B=BIOMES[b];if(!B)return;LV.fogTint=STYLES[B.style].fog;const w=chooseWeather();if(w!==wName){setWeather(w);wFast=6}}
+function chamberTick(dt){if(!LV||LV.camp||!LV.doors||!LV.doors.length)return;const k=tileAt(P.x,P.z),rid=k>=0?LV.room[k]:-1;
+  if(LV.locked!=null){if(!enemiesIn(LV.locked).length)openChamber(LV.locked);return}
+  if(rid<0){LV.lastRid=-1;return}if(rid===LV.lastRid)return;LV.lastRid=rid;const r=LV.R[rid];if(!r)return;
+  const newWorld=r.biome&&r.biome!==LV.curBiome;if(newWorld)enterBiome(r.biome);
+  LV.cleared=LV.cleared||{};const onPath=LV.path.includes(r);const foes=onPath&&!LV.cleared[rid]&&!MP.on?enemiesIn(rid):[];
+  if(!foes.length){if(onPath)LV.cleared[rid]=1;if(newWorld)banner(BIOMES[r.biome].n,THEMES[r.theme]?THEMES[r.theme].toUpperCase():'',1500);return}
+  LV.locked=rid;for(const g of GATES)if(g.door&&(g.ra===rid||g.rb===rid)&&(g.open||g.lifting)){g.open=false;g.lifting=false;g.lowering=true}
+  for(const e of foes)e.aggro=true;vib(25);for(const a of allies)if(LV.room[tileAt(a.x,a.z)]!==rid){a.x=P.x+rr(-1,1);a.z=P.z+rr(-1,1);a.y=groundH(a.x,a.z)}
+  computePD();sfx('gate');shake=Math.max(shake,.15);banner('Sconfiggi tutti i mostri!',(BIOMES[r.biome]?BIOMES[r.biome].n:'').toUpperCase(),1700)}
+function openChamber(rid){LV.locked=null;LV.cleared[rid]=1;for(const g of GATES)if(g.door&&(g.ra===rid||g.rb===rid)&&!g.open){g.lowering=false;g.lifting=true}
+  sfx('secret');banner('Stanza completata!','LE PORTE SI APRONO',1500);dropGold(P.x,P.z,8+floor*4);if(Math.random()<.3)dropItem(P.x,P.z,'potion');P.mp=P.maxMp}
 
 // ================= Update =================
 const inp={f:0,s:0};let atkDown=false,atkPrev=false,blockDown=false,joy={x:0,y:0};
@@ -117,6 +132,7 @@ function update(dt){
   if(P.chargeRun<=0){if(aiming)faceAim();else if(P.moving>.3)P.yaw+=angDiff(Math.atan2(dx,dz),P.yaw)*Math.min(1,dt*12)}
   P.block=blockDown&&!P.drawT&&P.dashT<=0;if(blockDown&&!P.wasBlock)P.blockT=now;P.wasBlock=blockDown;
   atkDown=(mouseAtk||touchAtk)&&!P.block;
+  if(atkDown&&!atkPrev&&touchAtk)autoAim(w);autoAimTick(dt);
   if(w){if(atkDown&&!atkPrev){if(b.kind==='bow')P.drawT=.001;else if(b.kind==='melee'){if(P.cd<=0&&P.atkT<0)startAttack(w);if(b.charge)P.chargeT=.001}else if(b.kind==='magic'&&P.cd<=0)castMagic(w)}
     if(atkDown){if(b.kind==='bow'){P.drawT=Math.min(1,P.drawT+dt/.8)}else if(b.kind==='melee'){if(b.charge){if(P.chargeT>0)P.chargeT+=dt}else if(P.cd<=0&&P.atkT<0)startAttack(w)}else if(b.kind==='magic'&&P.cd<=0)castMagic(w)}
     if(!atkDown&&atkPrev){if(b.kind==='bow'&&P.drawT>.05)fireBow(w,P.drawT);P.drawT=0;if(b.charge&&P.chargeT>.6){if(w.base==='sword'){startAttack(w,'spin');float(P.x,P.y+2.4,P.z,'ROTANTE!','#fff',1)}else{startAttack(w);quake(w)}}P.chargeT=0}}
@@ -131,12 +147,13 @@ function update(dt){
   if(ENT.length>140)ENT=ENT.filter(e=>!e.dead);
   updProj(dt);updDrops(dt);updTraps(dt);updTurrets(dt);updMeteors(dt);updPet(dt);
   for(let i=ANIM.length-1;i>=0;i--)if(!ANIM[i](dt))ANIM.splice(i,1);
-  for(const g of GATES)if(g.lifting&&!g.open){g.lift+=dt*1.6;g.obj.position.y=g.lift;if(g.lift>=WALLH-.6){g.open=true;computePD()}}
+  for(const g of GATES){if(g.lifting&&!g.open){g.lift+=dt*(g.door?4:1.6);g.obj.position.y=g.lift;if(g.lift>=WALLH-.6){g.lift=WALLH-.6;g.open=true;g.lifting=false;computePD()}}else if(g.lowering){g.lift=Math.max(0,g.lift-dt*7);g.obj.position.y=g.lift;if(g.lift<=0)g.lowering=false}}
+  chamberTick(dt);
   for(let i=FLOATS.length-1;i>=0;i--){const q=FLOATS[i];q.y+=dt*.9;q.life-=dt;if(q.life<=0)FLOATS.splice(i,1)}
   music.setMood(floor===0?'camp':boss?'boss':aggro>0||BOULDERS.length?'combat':'explore');
   if(boss){$('bossBar').hidden=false;$('bossName').textContent=boss.n;$('bossFill').style.transform=`scaleX(${Math.max(0,boss.hp/boss.maxHp)})`}else $('bossBar').hidden=true;
   const o=nearestInter(),pr=$('prompt');if(o){const t={chest:'Apri la cassa',basket:'Apri la cesta',lever:'Tira la leva',cage:'Libera il prigioniero',idol:'Prendi l\'idolo d\'oro',merchant:'Parla con il mercante',board:'Bacheca: costruisci e recluta',revive:'Rialza il compagno',mprevive:o.r?`Rialza ${o.r.name}`:'Rialza',portal:floor===0?'Portale: apri la grande mappa':(curNode()&&curNode().type==='final'?'Portale':'Portale: scegli la prossima strada')}[o.kind];
-    pr.innerHTML=`<kbd>${isTouch?'USA':'E'}</kbd>`;pr.appendChild(document.createTextNode(t));pr.hidden=false}else pr.hidden=true;
+    pr.innerHTML=`<kbd>${isTouch?'USA':'E'}</kbd>`;pr.appendChild(document.createTextNode(t));pr.hidden=false;setUse(1)}else{pr.hidden=true;setUse(0)}
   hurtT=Math.max(0,hurtT-dt);$('hurt').style.opacity=hurtT*2.2;shake=Math.max(0,shake-dt);
   if(LV){const ti=Math.floor(P.x/TS),tj=Math.floor(P.z/TS);for(let j=tj-6;j<=tj+6;j++)for(let i=ti-6;i<=ti+6;i++)if(i>=0&&j>=0&&i<LV.gw&&j<LV.gh)LV.seen[tIdx(i,j)]=1}
   updHud()}
@@ -269,7 +286,8 @@ function updTraps(dt){for(let i=BOULDERS.length-1;i>=0;i--){const b=BOULDERS[i];
 
 // ================= Camera & player visual =================
 const camPos=new THREE.Vector3(),camTgt=new THREE.Vector3(),hv=new THREE.Vector3();
-function updCamera(dt){if(P.lock&&!P.lock.dead)cam.yaw+=angDiff(Math.atan2(P.lock.x-P.x,P.lock.z-P.z),cam.yaw)*Math.min(1,dt*5);
+function updCamera(dt){if(P.lock&&!P.lock.dead&&!P.autoLock)cam.yaw+=angDiff(Math.atan2(P.lock.x-P.x,P.lock.z-P.z),cam.yaw)*Math.min(1,dt*5);
+  else if(isTouch&&!cam.fp&&(P.moving||0)>1&&performance.now()/1000-UX.lastLook>1.2&&!P.lock&&P.chargeRun<=0){const d=angDiff(P.yaw,cam.yaw);if(Math.abs(d)<1.9)cam.yaw+=d*Math.min(1,dt*.9)}
   const f=new THREE.Vector3(Math.sin(cam.yaw),0,Math.cos(cam.yaw)),R=new THREE.Vector3(-Math.cos(cam.yaw),0,Math.sin(cam.yaw));
   if(cam.fp){camera.near=.05;camera.updateProjectionMatrix();H.head.visible=false;H.head.getWorldPosition(hv);const p=cam.fpPitch;camera.position.set(hv.x+f.x*.12,hv.y+.06,hv.z+f.z*.12);if(shake>0)camera.position.add(new THREE.Vector3(rr(-1,1),rr(-1,1),0).multiplyScalar(shake*.08));
     camTgt.copy(camera.position).add(new THREE.Vector3(f.x*Math.cos(p),-Math.sin(p),f.z*Math.cos(p)));camera.lookAt(camTgt);return}

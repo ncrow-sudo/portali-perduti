@@ -156,6 +156,54 @@ input[type=range]{width:100%;accent-color:var(--gold)}
   #msg{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 88px)}#prompt{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 56px)}#banner{top:14%}}
 @media (max-width:560px){#party{display:none}}
 @media (prefers-reduced-motion:reduce){.bar i,#banner,#msg{transition:none}}
+
+/* ===== Mobile controls (Brawl Stars / Archero style thumb arc) ===== */
+:root{--u:1px}
+@media (max-height:430px){:root{--u:.84px}}
+.tb{position:absolute;pointer-events:auto;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2a2620ee,#0d0c0aee);border:2px solid #fff4;box-shadow:0 4px 12px #0008,inset 0 1px 0 #fff2;color:var(--ink);display:grid;place-items:center;align-content:center;gap:1px;padding:0;width:calc(var(--u)*58);height:calc(var(--u)*58);touch-action:none;-webkit-tap-highlight-color:transparent}
+.tb b{font-size:calc(var(--u)*9);font-weight:800;letter-spacing:.04em;line-height:1}
+.tb svg{width:calc(var(--u)*24);height:calc(var(--u)*24)}
+.tb:active,.tb.down{transform:scale(.93);filter:brightness(1.3)}
+#bAtk{width:calc(var(--u)*96);height:calc(var(--u)*96);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*8);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*14);border:3px solid #e0a050;background:radial-gradient(circle at 50% 35%,#5a3a1e,#24160b)}
+#bAtk svg{width:calc(var(--u)*38);height:calc(var(--u)*38)}
+#bAbi{width:calc(var(--u)*74);height:calc(var(--u)*74);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*118);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*6);border:0;background:conic-gradient(#c88aff calc(var(--p,100)*1%),#2a2140 0);padding:4px;overflow:visible}
+#bAbi::before{content:"";position:absolute;inset:5px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#3a2a5a,#130c22)}
+#bAbi>*{position:relative}
+#bAbi .cdv{display:none}
+#bAbi.ready{animation:abiGlow 1.2s ease-in-out infinite}
+@keyframes abiGlow{0%,100%{box-shadow:0 0 0 0 #c88aff00,0 4px 12px #0008}50%{box-shadow:0 0 18px 4px #c88affaa,0 4px 12px #0008}}
+#bJmp{right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*26);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*122);border-color:#7be36b}
+#bDash{right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*104);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*96);border-color:#9fd8ff}
+#bShd{width:calc(var(--u)*52);height:calc(var(--u)*52);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*204);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*14);border-color:#7ab0ff}
+#bPot{width:calc(var(--u)*50);height:calc(var(--u)*50);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*186);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*86);border-color:#ff7a7a;color:#ff9a9a}
+#bWep{width:calc(var(--u)*56);height:calc(var(--u)*56);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*100);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*172);border-color:var(--gold)}
+#bWepC{width:calc(var(--u)*40);height:calc(var(--u)*40)}
+#bUse{width:calc(var(--u)*70);height:calc(var(--u)*70);right:calc(max(20px,env(safe-area-inset-right,0px)) + var(--u)*190);bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--u)*160);border:3px solid var(--gold);background:radial-gradient(circle at 50% 35%,#6a5020,#2a1c08);display:none}
+#bUse.show{display:grid;animation:usePulse 1s ease-in-out infinite}
+@keyframes usePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.badge2{position:absolute;right:-4px;top:-4px;min-width:20px;height:20px;border-radius:10px;background:var(--gold);color:#2a1606;font-size:12px;font-weight:800;display:grid;place-items:center;padding:0 4px;box-shadow:0 2px 4px #0008}
+#bPot.empty{opacity:.45}
+#prompt{pointer-events:auto;cursor:pointer}
+.trrow{display:flex;gap:6px;align-items:center}
+#bPause{pointer-events:auto;width:40px;height:40px;border-radius:12px;background:#000a;border:1px solid #fff3;display:grid;place-items:center;color:var(--ink);padding:0}
+.touchmode #br,.touchmode #slots,.touchmode #qPot,.touchmode .chip kbd{display:none}
+.touchmode #bPause{width:48px;height:48px}
+.pausecard{width:min(460px,100%)}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.pgrid .btn{min-height:52px;font-size:16px}
+.pgrid .big{grid-column:1/-1;min-height:60px;font-size:18px}
+#rotate{position:fixed;inset:0;z-index:50;background:#0d0f0cf2;display:grid;place-items:center;text-align:center;padding:24px}
+.rotbox h2{font-family:var(--display);margin:10px 0 4px}
+.rotico{animation:rot 2.2s ease-in-out infinite;color:var(--gold)}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+#coach{position:absolute;inset:0;z-index:40;pointer-events:auto}
+.coachdim{position:absolute;inset:0}
+.coachring{position:absolute;border-radius:50%;box-shadow:0 0 0 9999px #000a,0 0 0 4px var(--gold);transition:all .35s;pointer-events:none}
+.coachtip{position:absolute;max-width:min(300px,70vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:6px;box-shadow:0 10px 30px #000a}
+.coachtip b{font-family:var(--display);font-size:18px;color:var(--gold)}
+.coachtip span{font-size:15px;line-height:1.35}
+@media (prefers-reduced-motion:reduce){#bAbi.ready,#bUse.show,.rotico{animation:none}}
+@media (max-height:430px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pgrid .btn{min-height:46px;font-size:14px}.pgrid .big{min-height:50px}.pausecard{width:min(620px,100%)}.pausecard h2{font-size:20px}}
 </style>
 
 <div id="game">
@@ -164,13 +212,15 @@ input[type=range]{width:100%;accent-color:var(--gold)}
   <div id="touch" hidden>
     <div id="look"></div>
     <div id="joyZone"><div id="joy"><div id="knob"></div></div></div>
-    <button class="tb" id="bAtk" type="button">ATTACCA</button>
-    <button class="tb" id="bShd" type="button">SCUDO</button>
-    <button class="tb" id="bJmp" type="button">SALTA</button>
-    <button class="tb" id="bDash" type="button">SCHIVA</button>
-    <button class="tb" id="bUse" type="button">USA</button>
-    <button class="tb" id="bLock" type="button">MIRA</button>
-    <button class="tb" id="bAbi" type="button"><span id="bAbiTxt">ABILITÀ</span><i class="cdv" id="bAbiCdv"></i></button>
+    <button class="tb" id="bAtk" type="button" aria-label="Attacca"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><b>ATTACCA</b></button>
+    <button class="tb" id="bAbi" type="button" aria-label="Abilità"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><b id="bAbiTxt">ABILITÀ</b><i class="cdv" id="bAbiCdv"></i></button>
+    <button class="tb" id="bJmp" type="button" aria-label="Salta"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 11 6-6 6 6"/><path d="M12 5v14"/></svg><b>SALTA</b></button>
+    <button class="tb" id="bDash" type="button" aria-label="Schiva"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg><b>SCHIVA</b></button>
+    <button class="tb" id="bShd" type="button" aria-label="Scudo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg><b>SCUDO</b></button>
+    <button class="tb" id="bPot" type="button" aria-label="Pozione"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v5L5.5 16a3.5 3.5 0 0 0 3 5h7a3.5 3.5 0 0 0 3-5L14 8V3"/><path d="M7 15h10"/></svg><span class="badge2" id="bPotN">3</span></button>
+    <button class="tb" id="bWep" type="button" aria-label="Cambia arma"><canvas id="bWepC" width="80" height="80"></canvas><span class="badge2" id="bWepN">1</span></button>
+    <button class="tb" id="bUse" type="button" aria-label="Usa"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15"/></svg><b>USA</b></button>
+    <button class="tb" id="bLock" type="button" hidden>MIRA</button>
   </div>
   <div id="hud" hidden>
     <div class="stats">
@@ -183,7 +233,7 @@ input[type=range]{width:100%;accent-color:var(--gold)}
       <div id="mission" hidden></div>
       <div id="party"></div>
     </div>
-    <div id="tr"><div id="clock"></div><canvas id="mm" width="120" height="120"></canvas><div id="br"><button id="bMap" type="button">Mappa (M)</button><button id="bOrd" type="button">Ordine: seguimi</button><button id="bView" type="button">Vista (V)</button><button id="bDance" type="button">Balla</button><button id="bSet" type="button">Audio</button><button id="bLeave" type="button" hidden>Lascia gruppo</button><button id="bInvite" type="button" hidden>Invita (QR)</button><button id="bMenu" type="button">Menu</button></div></div>
+    <div id="tr"><div class="trrow"><div id="clock"></div><button id="bPause" type="button" aria-label="Menu di pausa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div><canvas id="mm" width="120" height="120"></canvas><div id="br"><button id="bMap" type="button">Mappa (M)</button><button id="bOrd" type="button">Ordine: seguimi</button><button id="bView" type="button">Vista (V)</button><button id="bDance" type="button">Balla</button><button id="bSet" type="button">Audio</button><button id="bLeave" type="button" hidden>Lascia gruppo</button><button id="bInvite" type="button" hidden>Invita (QR)</button><button id="bMenu" type="button">Menu</button></div></div>
     <div id="bossBar" hidden><div id="bossName"></div><div class="bar boss"><i id="bossFill"></i></div></div>
     <div id="banner"></div><div id="combo"></div>
     <div id="msg"></div>
@@ -294,6 +344,27 @@ input[type=range]{width:100%;accent-color:var(--gold)}
     <p class="lede" id="qrUrl" style="font-size:12px;word-break:break-all;-webkit-user-select:text;user-select:text"></p>
     <div class="btns" style="justify-content:center;margin-bottom:0"><button class="btn alt" id="qrClose" type="button">Chiudi</button></div>
   </div></div>
+
+  <div class="screen" id="scPause" hidden><div class="card pausecard">
+    <div class="tag">Pausa</div><h2 id="pauseTitle">Il gioco è in pausa</h2>
+    <div class="pgrid">
+      <button class="btn green big" id="pResume" type="button">Riprendi</button>
+      <button class="btn alt" id="pBag" type="button">Zaino</button>
+      <button class="btn alt" id="pMap" type="button">Mappa</button>
+      <button class="btn alt" id="pView" type="button">Visuale</button>
+      <button class="btn alt" id="pOrd" type="button">Compagni</button>
+      <button class="btn alt" id="pDance" type="button">Balla</button>
+      <button class="btn alt" id="pSet" type="button">Audio e lingua</button>
+      <button class="btn alt" id="pInvite" type="button" hidden>Invita amici</button>
+      <button class="btn alt" id="pLeave" type="button" hidden>Lascia gruppo</button>
+      <button class="btn alt" id="pMenu" type="button">Menu principale</button>
+    </div>
+  </div></div>
+
+  <div id="rotate" hidden><div class="rotbox"><svg viewBox="0 0 48 48" width="72" height="72" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="rotico"><rect x="14" y="6" width="20" height="36" rx="3"/><path d="M22 37h4"/></svg>
+    <h2>Gira il telefono</h2><p class="lede">Si gioca meglio in orizzontale.</p><button class="btn alt" id="rotSkip" type="button">Gioca in verticale</button></div></div>
+
+  <div id="coach" hidden><div class="coachdim"></div><div class="coachring" id="coachRing"></div><div class="coachtip" id="coachTip"><b id="coachT"></b><span id="coachD"></span><button class="btn green" id="coachNext" type="button">Ho capito</button></div></div>
 
   <div class="screen" id="scSet" hidden><div class="card" style="width:min(420px,100%)">
     <h2>Audio</h2>
