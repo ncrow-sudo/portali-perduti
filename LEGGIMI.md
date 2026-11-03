@@ -5,7 +5,7 @@
 Il modo più veloce: premi il pulsante qui sopra, entra su Render con GitHub e premi **Apply**.
 
 Con questi file il gioco ha un indirizzo suo (per esempio `https://portali-perduti.onrender.com`).
-Chi lo apre gioca subito, senza account. Per giocare insieme: uno crea la stanza, appare un QR code, gli amici lo inquadrano con il telefono ed entrano direttamente nella stessa partita.
+Chi lo apre gioca subito, senza account. Il gioco è in italiano, inglese e danese: la lingua si sceglie nella schermata iniziale (all'inizio segue quella del telefono). Per giocare insieme: uno crea la stanza, appare un QR code, gli amici lo inquadrano con il telefono ed entrano direttamente nella stessa partita.
 
 Servono due account gratuiti: **GitHub** (dove stanno i file) e **Render** (che fa girare il gioco). Tempo: circa 15 minuti, una volta sola.
 
