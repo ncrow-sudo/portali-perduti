@@ -49,6 +49,6 @@ Servono due account gratuiti: **GitHub** (dove stanno i file) e **Render** (che 
 ## Da sapere
 
 - **Piano gratuito di Render**: se per 15 minuti nessuno gioca, il server si addormenta. La prima persona che apre il gioco aspetta circa un minuto, poi va veloce. Il piano **Starter** (circa 7 dollari al mese) lo tiene sempre sveglio.
-- **Aggiornamenti**: quando cambio il gioco, sostituisci solo `public/index.html` su GitHub (**Add file**, **Upload files**, **Commit changes**). Render lo rimette online da solo in un paio di minuti.
+- **Aggiornamenti**: chiedi le modifiche a Claude indicando il repository `ncrow-sudo/portali-perduti`. Claude cambia i sorgenti in `src/`, ricostruisce il gioco e carica tutto su GitHub; Render lo rimette online da solo in 2-3 minuti. I salvataggi dei giocatori restano sul loro telefono.
 - **Bambini e privacy**: non ci sono account, chat o dati personali. Ognuno sceglie solo un nome (meglio un soprannome). Le stanze si vedono solo con il codice o il QR, nessuno vede chi altro è online, e il server non salva niente: quando tutti escono, la stanza sparisce. I salvataggi del personaggio restano sul telefono di ciascuno.
 - **Scuola**: verificate prima le regole della scuola sull'uso dei telefoni e della rete Wi-Fi. Se la rete della scuola blocca il sito, il gioco funziona anche con i dati del telefono.

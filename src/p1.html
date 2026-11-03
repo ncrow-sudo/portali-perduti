@@ -1,0 +1,345 @@
+<meta charset="utf-8">
+<title>Portali Perduti</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: full-screen 3D canvas with a 2D overlay; slim HUD in the corners; parchment-and-bronze cards for menus */
+:root{
+  --bg:#0d0f0c; --panel:#1b1a16ee; --panel2:#26241e; --line:#5a4a30; --ink:#f4ead6; --dim:#b8aa8c;
+  --gold:#f2c14e; --hp:#e0473a; --mp:#4f8dff; --leaf:#6cc070; --bronze:#c08a4a;
+  --display:"Cinzel",Georgia,serif; --body:"Nunito",system-ui,sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;background:var(--bg);color:var(--ink)}
+body{margin:0;overflow:hidden;font-family:var(--body);font-size:16px;-webkit-user-select:none;user-select:none;touch-action:none}
+#game{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
+#gl,#ui{position:absolute;inset:0;width:100%;height:100%;display:block}
+#ui{pointer-events:none}
+#hurt{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(200,20,20,.7))}
+#fade{position:absolute;inset:0;pointer-events:none;opacity:0;background:#000;transition:opacity .25s}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#hud{position:absolute;inset:0;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-bottom,0px));box-sizing:border-box}
+.stats{display:grid;gap:5px;width:min(240px,44vw)}
+.pname{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.06em;text-shadow:0 2px 4px #000}
+.bar{position:relative;height:12px;background:#000a;border-radius:7px;overflow:hidden;box-shadow:0 0 0 1px #0008,inset 0 1px 2px #0008}
+.bar i{position:absolute;inset:0;transform-origin:left;transition:transform .2s;border-radius:7px}
+.bar.hp i{background:linear-gradient(#ff8070,var(--hp))}.bar.mp i{background:linear-gradient(#90b8ff,var(--mp))}
+.row{display:flex;gap:10px;align-items:center;font-weight:700;font-size:14px;text-shadow:0 1px 3px #000}
+.row b{color:var(--gold)}
+.chip{pointer-events:auto;background:#000a;border:1px solid #fff2;border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.chip kbd{font-family:var(--body);font-size:11px;background:var(--gold);color:#000;border-radius:4px;padding:0 4px}
+.chip{white-space:nowrap}
+.touchmode #abil{display:none}
+.chip.low{border-color:var(--hp);box-shadow:0 0 10px #e0473a}
+#tr{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:max(12px,env(safe-area-inset-top,0px));display:grid;justify-items:end;gap:6px}
+#clock{font-weight:800;font-size:13px;text-shadow:0 1px 3px #000;background:#0008;border-radius:999px;padding:3px 10px}
+#mm{pointer-events:auto;cursor:pointer;width:120px;height:120px;border-radius:12px;background:#0007;box-shadow:0 0 0 1px #fff2}
+#party{display:grid;gap:4px;width:160px;margin-top:2px}
+#party .pm{background:#0008;border-radius:8px;padding:3px 7px;font-size:12px;font-weight:700}
+#party .pm .bar{height:5px;margin-top:2px}
+#party .ord{font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#bossBar{position:absolute;left:50%;transform:translateX(-50%);top:max(14px,env(safe-area-inset-top,0px));width:min(440px,60vw);text-align:center}
+#bossName{font-family:var(--display);font-weight:800;font-size:16px;color:#ffb0a0;text-shadow:0 2px 4px #000;margin-bottom:4px}
+.bar.boss{height:10px}.bar.boss i{background:linear-gradient(#ff6a5a,#a01810)}
+#banner{position:absolute;left:0;right:0;top:20%;text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(24px,4.5vw,44px);text-shadow:0 3px 10px #000;opacity:0;transition:opacity .4s;padding:0 16px}
+#banner small{display:block;font-family:var(--body);font-weight:800;font-size:.34em;letter-spacing:.3em;color:var(--gold)}
+#msg{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 108px);font-weight:800;font-size:16px;text-shadow:0 1px 4px #000;text-align:center;width:min(90%,600px);transition:opacity .5s}
+#prompt{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 74px);background:#000c;border:1px solid var(--gold);border-radius:999px;padding:4px 14px;font-weight:800;white-space:nowrap}
+#prompt kbd{font-family:var(--body);background:var(--gold);color:#000;border-radius:4px;padding:0 6px;margin-right:6px;font-size:13px}
+#combo{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:45%;font-family:var(--display);font-weight:800;font-size:26px;color:var(--gold);text-shadow:0 2px 6px #000;text-align:right;opacity:0;transition:opacity .2s}
+#combo small{display:block;font-family:var(--body);font-size:12px;letter-spacing:.2em;color:var(--ink)}
+#slots{position:absolute;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;gap:6px;pointer-events:auto}
+.slot{width:52px;height:52px;background:#000a;border:2px solid #fff2;border-radius:10px;display:grid;place-items:center;position:relative;padding:0}
+.slot canvas{width:40px;height:40px}
+.slot .k{position:absolute;left:4px;top:1px;font-size:10px;font-weight:800;color:var(--dim)}
+.slot.on{border-color:var(--gold);box-shadow:0 0 10px #f2c14e66}
+.slot.empty{opacity:.35}
+#br{display:flex;gap:5px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:240px}
+#br button{background:#000a;border:1px solid #fff2;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800}
+
+.screen{touch-action:pan-y;-webkit-overflow-scrolling:touch;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 40%,#0006,#000c 80%);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));box-sizing:border-box;overflow:auto}
+.screen.side{justify-content:flex-start;background:linear-gradient(90deg,#000d 0,#0009 40%,transparent 70%)}
+.card{touch-action:pan-y;overscroll-behavior:contain;width:min(560px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px #000a,inset 0 1px 0 #fff1;padding:22px;box-sizing:border-box;max-height:100%;overflow:auto;backdrop-filter:blur(6px)}
+.card h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,7vw,56px);line-height:1;margin:0 0 10px;text-wrap:balance;background:linear-gradient(#ffe7a8,#c08a4a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 6px #000)}
+.card h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0 0 6px;text-wrap:balance}
+.card h3{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}
+.tag{font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--leaf)}
+.lede{color:var(--dim);font-size:16px;line-height:1.45;margin:0 0 14px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.btn{background:linear-gradient(#f6d27a,#c8913e);color:#2a1606;border:0;border-radius:10px;box-shadow:0 3px 0 #7a4f1e,0 6px 14px #0006;padding:10px 18px;font-weight:800;font-size:15px}
+.btn.alt{background:var(--panel2);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.btn.green{background:linear-gradient(#9be08a,#4fa04a);color:#0e2a0a;box-shadow:0 3px 0 #2e6a2a,0 6px 14px #0006}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:not(:disabled):active{transform:translateY(2px)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;color:var(--dim);border-top:1px solid var(--line);padding-top:10px}
+.keys kbd{align-self:start;font-family:var(--body);font-weight:800;font-size:11px;color:var(--ink);background:#000;border:1px solid var(--line);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.rec{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-top:10px}
+.opt{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;align-items:center;margin:6px 0}
+.opt label{font-weight:800;font-size:13px;color:var(--dim)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills button{background:#0006;border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700}
+.pills button.on{border-color:var(--gold);color:var(--gold);background:#f2c14e18}
+.sw{width:26px;height:26px;border-radius:50%;padding:0;border:2px solid #0008!important}
+.sw.on{box-shadow:0 0 0 2px var(--gold)}
+input[type=text]{font:inherit;font-weight:800;background:#0008;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:100%;box-sizing:border-box}
+.list{display:grid;gap:6px}
+.item{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--panel2);border:1px solid #0006;border-radius:10px;padding:6px 8px}
+.item.on{border-color:var(--gold)}
+.item canvas{width:40px;height:40px;background:#0006;border-radius:8px}
+.item .nm{font-weight:800;min-width:0}
+.item .st{font-size:13px;color:var(--dim)}
+.item .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.item .btn{padding:6px 10px;font-size:13px}
+.gold{color:var(--gold)}
+.shopmsg{min-height:22px;font-weight:700;margin:8px 0 0;color:var(--leaf)}
+.shophead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tabs button{background:#0006;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px}
+.tabs button.on{border-color:var(--gold);color:var(--gold)}
+.deadstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:12px 0}
+.deadstats div{background:var(--panel2);border-radius:10px;padding:6px 10px}
+.deadstats b{display:block;font-family:var(--display);font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums}
+.deadstats span{font-size:13px;color:var(--dim)}
+.share{background:#0008;border:1px dashed var(--line);border-radius:10px;padding:8px;font-size:14px;white-space:pre-wrap;-webkit-user-select:text;user-select:text}
+
+#touch{position:absolute;inset:0;pointer-events:none}
+#look{position:absolute;right:0;top:0;width:58%;bottom:0;pointer-events:auto}
+#joyZone{position:absolute;left:0;top:30%;bottom:0;width:42%;pointer-events:auto;touch-action:none}
+#joy{position:absolute;left:calc(max(20px,env(safe-area-inset-left,0px)) + 70px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 130px);width:140px;height:140px;margin:-70px 0 0 -70px;border-radius:50%;background:radial-gradient(circle,#0000 55%,#ffffff14 56%,#0006 70%);border:2px solid #fff4;opacity:.5;transition:opacity .15s;pointer-events:none}
+#joy.on{opacity:1;transition:none}
+#joy::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:3px solid transparent;border-top-color:var(--gold);transform:rotate(var(--ja,0deg));opacity:var(--jm,0)}
+#knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#d8d0c0 60%,#a89e88);box-shadow:0 3px 8px #0008;border:2px solid #fffb}
+.tb{position:absolute;pointer-events:auto;border-radius:50%;background:#000a;border:2px solid #fff3;font-weight:800;font-size:11px;display:grid;place-items:center;color:var(--ink);width:56px;height:56px;padding:0}
+#bAtk{width:84px;height:84px;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 70px);border-color:var(--bronze);font-size:13px}
+#bShd{right:calc(max(18px,env(safe-area-inset-right,0px)) + 96px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 64px);border-color:#7ab0ff}
+#bJmp{right:calc(max(18px,env(safe-area-inset-right,0px)) + 14px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 166px);border-color:var(--leaf)}
+#bDash{right:calc(max(18px,env(safe-area-inset-right,0px)) + 80px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 134px)}
+#bUse{right:calc(max(18px,env(safe-area-inset-right,0px)) + 150px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 110px)}
+#bLock{right:calc(max(18px,env(safe-area-inset-right,0px)) + 146px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 176px)}
+
+.lvl{display:flex;align-items:center;gap:8px}
+.badge{font-family:var(--display);font-weight:800;font-size:12px;border-radius:999px;padding:1px 8px;background:#000a;border:1px solid currentColor;white-space:nowrap}
+.bar.xp{height:5px}.bar.xp i{background:linear-gradient(#d8f0ff,#7ab8ff)}
+#mission{font-size:12px;font-weight:800;background:#0009;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:3px 8px;text-shadow:0 1px 2px #000;max-width:min(240px,44vw)}
+#mission.done{border-color:var(--leaf);color:var(--leaf)}
+#abil{pointer-events:auto;position:relative;overflow:hidden}
+#abil .cdv{position:absolute;inset:0;background:#000b;transform-origin:bottom;pointer-events:none}
+#bigmap{position:absolute;inset:0;margin:auto;width:min(86vw,86vh);height:min(86vw,86vh);background:#0c0e0ae8;border:1px solid var(--line);border-radius:16px;pointer-events:auto}
+#mapHint{position:absolute;left:0;right:0;top:calc(50% + min(43vw,43vh) - 30px);text-align:center;font-weight:800;font-size:13px;color:var(--dim);pointer-events:none}
+.classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.cls{text-align:left;background:var(--panel2);border:2px solid #0006;border-radius:12px;padding:8px 10px;display:grid;gap:3px}
+.cls b{font-family:var(--display);font-size:16px}
+.cls span{font-size:12px;color:var(--dim);line-height:1.35}
+.cls.on{border-color:var(--gold);background:#f2c14e18}
+.stepnav{position:sticky;bottom:-22px;margin:12px -22px -22px;padding:12px 22px;background:var(--panel);border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-radius:0 0 16px 16px}
+.stepnav .sp{flex:1}
+.dots{display:flex;gap:6px;margin:0 0 8px}.dots i{width:28px;height:4px;border-radius:2px;background:#fff2}.dots i.on{background:var(--gold)}
+.roomcode{font-weight:800;color:var(--dim);margin:4px 0 6px}.roomcode b{display:block;font-family:var(--display);font-size:40px;letter-spacing:.25em;color:var(--gold)}
+.routecard{width:min(640px,100%);display:flex;flex-direction:column;max-height:100%}
+#routeScroll{flex:1;min-height:140px;max-height:62vh;overflow:auto;border-radius:12px;border:1px solid var(--line);touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#routeCv{display:block}
+@media (max-height:520px){#routeScroll{max-height:48vh}.routecard h2{font-size:18px}}
+.sliders{display:grid;gap:10px;margin:10px 0}
+.sliders label{display:grid;grid-template-columns:90px 1fr 40px;gap:10px;align-items:center;font-weight:800;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--gold)}
+.say{position:absolute}
+.tb.ab{border-color:#c88aff}
+#bAbi{right:calc(max(18px,env(safe-area-inset-right,0px)) + 212px);bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 60px);border-color:#c88aff;overflow:hidden}
+#bAbi .cdv{position:absolute;inset:0;background:#000b;transform-origin:bottom;pointer-events:none}
+@media (max-height:520px){#bAbi{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 30px);right:calc(max(18px,env(safe-area-inset-right,0px)) + 214px)}#mission{font-size:11px}.lvl .badge{font-size:11px}#br button{padding:3px 8px;font-size:11px}#br{max-width:200px}}
+@media (max-width:560px){#br{display:none}}
+@media (max-height:520px){.stats{width:min(200px,38vw);gap:3px}#mm{width:84px;height:84px}#party{gap:2px;max-height:26vh;overflow:hidden}#party .pm{padding:1px 6px;font-size:11px}.slot{width:42px;height:42px}.slot canvas{width:32px;height:32px}
+  #joy{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 90px);width:120px;height:120px;margin:-60px 0 0 -60px}#bAtk{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 40px)}#bShd{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 34px)}#bJmp{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 130px)}#bDash{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 100px)}#bUse{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 80px)}#bLock{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 140px)}
+  #msg{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 88px)}#prompt{bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 56px)}#banner{top:14%}}
+@media (max-width:560px){#party{display:none}}
+@media (prefers-reduced-motion:reduce){.bar i,#banner,#msg{transition:none}}
+</style>
+
+<div id="game">
+  <canvas id="gl"></canvas><canvas id="ui"></canvas>
+  <div id="hurt"></div><div id="fade"></div>
+  <div id="touch" hidden>
+    <div id="look"></div>
+    <div id="joyZone"><div id="joy"><div id="knob"></div></div></div>
+    <button class="tb" id="bAtk" type="button">ATTACCA</button>
+    <button class="tb" id="bShd" type="button">SCUDO</button>
+    <button class="tb" id="bJmp" type="button">SALTA</button>
+    <button class="tb" id="bDash" type="button">SCHIVA</button>
+    <button class="tb" id="bUse" type="button">USA</button>
+    <button class="tb" id="bLock" type="button">MIRA</button>
+    <button class="tb" id="bAbi" type="button"><span id="bAbiTxt">ABILITÀ</span><i class="cdv" id="bAbiCdv"></i></button>
+  </div>
+  <div id="hud" hidden>
+    <div class="stats">
+      <div class="lvl"><div class="pname" id="pname">Esploratore</div><span class="badge" id="lvlBadge">Liv 1</span></div>
+      <div class="bar hp"><i id="hpFill"></i></div>
+      <div class="bar mp"><i id="mpFill"></i></div>
+      <div class="bar xp"><i id="xpFill"></i></div>
+      <div class="row"><span>Oro <b id="goldTxt">0</b></span><span id="floorTxt"></span></div>
+      <div class="row"><button class="chip" id="qPot" type="button"><kbd>R</kbd>Pozione <b id="potTxt">0</b></button><button class="chip" id="qBag" type="button"><kbd>I</kbd>Zaino</button><button class="chip" id="abil" type="button"><kbd id="abKey">X</kbd><span id="abName">Abilità</span><i class="cdv" id="abCdv"></i></button></div>
+      <div id="mission" hidden></div>
+      <div id="party"></div>
+    </div>
+    <div id="tr"><div id="clock"></div><canvas id="mm" width="120" height="120"></canvas><div id="br"><button id="bMap" type="button">Mappa (M)</button><button id="bOrd" type="button">Ordine: seguimi</button><button id="bView" type="button">Vista (V)</button><button id="bDance" type="button">Balla</button><button id="bSet" type="button">Audio</button><button id="bLeave" type="button" hidden>Lascia gruppo</button><button id="bInvite" type="button" hidden>Invita (QR)</button><button id="bMenu" type="button">Menu</button></div></div>
+    <div id="bossBar" hidden><div id="bossName"></div><div class="bar boss"><i id="bossFill"></i></div></div>
+    <div id="banner"></div><div id="combo"></div>
+    <div id="msg"></div>
+    <div id="prompt" hidden></div>
+    <div id="slots"></div>
+  </div>
+
+  <div id="mapWrap" hidden><canvas id="bigmap" width="640" height="640"></canvas><div id="mapHint">Tocca la mappa o premi M per chiudere</div></div>
+
+  <div class="screen side" id="scTitle">
+    <div class="card">
+      <div class="tag">Prototipo 5 · Classi e Ranghi</div>
+      <h1>Portali Perduti</h1>
+      <p class="lede">Scegli la tua classe, sali di rango dal Legno al Diamante, raduna un esercito e scendi nel tempio perduto con il tuo draghetto Scintilla. Si gioca anche su telefono e tablet.</p>
+      <div class="opt" style="grid-template-columns:auto 1fr;margin:0 0 6px"><label>Lingua</label><div class="pills langPills"></div></div>
+      <div class="btns">
+        <button class="btn green" id="btnNew" type="button" disabled>Caricamento…</button>
+        <button class="btn" id="btnCont" type="button" hidden>Continua</button>
+        <button class="btn" id="btnMP" type="button">Gioca con amici</button>
+      </div>
+      <div class="keys">
+        <kbd>W A S D</kbd><span>muoviti · mouse per guardare (clic per agganciarlo)</span>
+        <kbd>Clic sinistro</kbd><span>attacca, tieni premuto per caricare o tendere l'arco</span>
+        <kbd>Clic destro · Q</kbd><span>scudo. Alzalo appena prima del colpo per una parata</span>
+        <kbd>Spazio · Shift</kbd><span>salta · schiva</span>
+        <kbd>E · R · I</kbd><span>usa · pozione · zaino</span>
+        <kbd>X · Tab</kbd><span>abilità di classe · mira su un nemico</span>
+        <kbd>M</kbd><span>mappa grande</span>
+        <kbd>F · V · G</kbd><span>ordini all'esercito · cambia visuale · balla</span>
+        <kbd>Rotella</kbd><span>avvicina o allontana la telecamera</span>
+        <kbd>Telefono</kbd><span>meglio in orizzontale. Joystick a sinistra, trascina a destra per guardare, pizzica per lo zoom</span>
+      </div>
+      <div class="rec" id="recTxt"></div>
+      <p class="lede" id="bootErr" hidden style="color:#ff9a8a;font-size:14px;margin:10px 0 0"></p>
+    </div>
+  </div>
+
+  <div class="screen side" id="scAvatar" hidden>
+    <div class="card" style="width:min(460px,100%)">
+      <div class="dots"><i data-s="0"></i><i data-s="1"></i><i data-s="2"></i></div>
+      <section id="av0">
+        <div class="tag">Passo 1 di 3</div><h2>Il tuo aspetto</h2>
+        <div class="opt"><label>Corporatura</label><div class="pills" data-k="build"></div></div>
+        <div class="opt"><label>Pelle</label><div class="pills" data-k="skin"></div></div>
+        <div class="opt"><label>Capelli</label><div class="pills" data-k="hairStyle"></div></div>
+        <div class="opt"><label>Colore capelli</label><div class="pills" data-k="hair"></div></div>
+        <div class="opt"><label>Cappello</label><div class="pills" data-k="hat"></div></div>
+        <div class="opt"><label>Giacca</label><div class="pills" data-k="shirt"></div></div>
+        <div class="opt"><label>Pantaloni</label><div class="pills" data-k="pants"></div></div>
+        <div class="opt"><label>Scudo</label><div class="pills" data-k="shield"></div></div>
+      </section>
+      <section id="av1" hidden>
+        <div class="tag">Passo 2 di 3</div><h2>Scegli la classe</h2>
+        <div class="classes" id="clsList"></div>
+      </section>
+      <section id="av2" hidden>
+        <div class="tag">Passo 3 di 3</div><h2>Ultimi dettagli</h2>
+        <div class="opt"><label for="avName">Nome</label><input type="text" id="avName" maxlength="14" value="Esploratore"></div>
+        <div class="opt"><label>Visuale</label><div class="pills" id="optView"></div></div>
+        <div class="opt"><label>Difficoltà</label><div class="pills" id="optDiff"></div></div>
+        <div class="opt"><label>Lingua</label><div class="pills langPills"></div></div>
+        <p class="lede" id="diffTxt" style="font-size:14px;margin:6px 0 0"></p>
+      </section>
+      <div class="stepnav"><button class="btn alt" id="avBack" type="button">Indietro</button><button class="btn alt" id="avRand" type="button">Casuale</button><span class="sp"></span><button class="btn green" id="avGo" type="button">Avanti</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="scLobby" hidden><div class="card" style="width:min(460px,100%)">
+    <div class="tag">Multigiocatore · cooperativo</div>
+    <h2>Gioca con amici</h2>
+    <p class="lede" id="lobStatus"></p>
+    <div id="lobJoin">
+      <div class="btns"><button class="btn green" id="lobCreate" type="button">Crea una stanza</button></div>
+      <div id="lobOnlineWrap"><h3>Chi è online adesso</h3><div class="list" id="lobOnline"></div></div>
+      <div class="opt" style="margin-top:10px"><label for="lobCode">Codice amico</label><div style="display:flex;gap:8px"><input type="text" id="lobCode" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn" id="lobEnter" type="button">Entra</button></div></div>
+    </div>
+    <div id="lobRoom" hidden>
+      <div class="roomcode">Codice stanza <b id="lobCodeShow"></b></div>
+      <h3>Giocatori</h3><div class="list" id="lobPlayers"></div>
+      <div class="btns"><button class="btn green" id="lobStart" type="button">Inizia la partita</button></div>
+    </div>
+    <p class="lede" style="font-size:13px;margin-top:10px">Importante: invita ogni amico con la sua email dal menu Condividi di claude.ai e fagli aprire la pagina collegato al suo account. Con il solo link pubblico le stanze non funzionano. Ognuno usa il proprio personaggio; si combatte insieme contro gli stessi mostri, ci si rialza a vicenda e si cambia piano tutti insieme.</p>
+    <p class="lede" id="lobDiag" style="font-size:12px;margin:6px 0 0;color:var(--leaf)"></p>
+    <div class="btns" style="margin-bottom:0"><button class="btn alt" id="lobBack" type="button">Indietro</button></div>
+  </div></div>
+
+  <div class="screen" id="scRoute" hidden><div class="card routecard">
+    <div class="tag">Ogni strada porta al Re dei Portali</div>
+    <h2 id="routeTitle">La grande mappa</h2>
+    <div id="routeScroll"><canvas id="routeCv"></canvas></div>
+    <p class="lede" id="routeInfo" style="font-size:14px;margin:8px 0 0;min-height:20px"></p>
+    <div class="btns" style="margin-bottom:0"><button class="btn green" id="routeGo" type="button" disabled>Vai</button><button class="btn alt" id="routeClose" type="button">Chiudi</button></div>
+  </div></div>
+
+  <div class="screen" id="scWin" hidden><div class="card">
+    <div class="tag" style="color:var(--gold)">Viaggio completato</div>
+    <h2>Hai sconfitto il Re dei Portali!</h2>
+    <p class="lede" id="winPath" style="margin:4px 0 0"></p>
+    <div class="deadstats" id="winStats"></div>
+    <div class="share" id="winShare"></div>
+    <div class="btns" style="margin-top:12px;margin-bottom:0"><button class="btn green" id="btnWinNew" type="button">Nuovo viaggio</button><button class="btn alt" id="btnWinShare" type="button">Copia risultato</button></div>
+  </div></div>
+
+  <div class="screen" id="qrWrap" hidden><div class="card" style="width:min(360px,100%);text-align:center">
+    <div class="tag">Invita gli amici</div><h2>Inquadra il codice</h2>
+    <div id="qrBox" style="display:inline-block;background:#fff;padding:12px;border-radius:12px;margin:8px 0"></div>
+    <div class="roomcode">Stanza <b id="qrCode"></b></div>
+    <p class="lede" id="qrUrl" style="font-size:12px;word-break:break-all;-webkit-user-select:text;user-select:text"></p>
+    <div class="btns" style="justify-content:center;margin-bottom:0"><button class="btn alt" id="qrClose" type="button">Chiudi</button></div>
+  </div></div>
+
+  <div class="screen" id="scSet" hidden><div class="card" style="width:min(420px,100%)">
+    <h2>Audio</h2>
+    <div class="sliders">
+      <label>Musica<input type="range" id="volMus" min="0" max="100"><span id="volMusV"></span></label>
+      <label>Effetti<input type="range" id="volSfx" min="0" max="100"><span id="volSfxV"></span></label>
+      <label>Ambiente<input type="range" id="volAmb" min="0" max="100"><span id="volAmbV"></span></label>
+    </div>
+    <p class="lede" style="font-size:14px">Ambiente comprende pioggia, vento, cascate e uccelli.</p>
+    <div class="opt"><label>Lingua</label><div class="pills langPills"></div></div>
+    <div class="btns" style="margin-bottom:0"><button class="btn alt" id="btnCloseSet" type="button">Chiudi</button></div>
+  </div></div>
+
+  <div class="screen" id="scBag" hidden><div class="card">
+    <div class="shophead"><h2>Zaino</h2><span class="gold" id="bagGold"></span></div>
+    <h3>Oggetti</h3><div class="list" id="bagItems"></div>
+    <h3>Armi</h3><div class="list" id="bagWeapons"></div>
+    <h3>Armature</h3><div class="list" id="bagArmors"></div>
+    <div class="shopmsg" id="bagMsg"></div>
+    <div class="btns" style="margin-bottom:0"><button class="btn alt" id="btnCloseBag" type="button">Chiudi (I o Esc)</button><button class="btn alt" id="bagMenu" type="button">Menu principale</button></div>
+  </div></div>
+
+  <div class="screen" id="scShop" hidden><div class="card">
+    <div class="shophead"><h2 id="shopTitle">Mercante</h2><span class="gold" id="shopGold"></span></div>
+    <div class="tabs" id="shopTabs"></div>
+    <div class="list" id="shopList"></div>
+    <div class="shopmsg" id="shopMsg"></div>
+    <div class="btns" style="margin-bottom:0"><button class="btn alt" id="btnCloseShop" type="button">Chiudi (Esc)</button></div>
+  </div></div>
+
+  <div class="screen" id="scDead" hidden><div class="card">
+    <div class="tag" style="color:var(--hp)">Sei caduto</div>
+    <h2 id="deadTitle"></h2>
+    <p class="lede" id="deadLine" style="margin:4px 0 0"></p>
+    <div class="deadstats" id="deadStats"></div>
+    <div class="share" id="shareTxt"></div>
+    <div class="btns" style="margin-top:12px;margin-bottom:0">
+      <button class="btn green" id="btnRetry" type="button">Riparti dal checkpoint</button>
+      <button class="btn alt" id="btnCamp" type="button">Torna all'Accampamento</button>
+      <button class="btn alt" id="btnShare" type="button">Copia risultato</button>
+    </div>
+  </div></div>
+</div>
+
+<script>
+(function(){var shown=false;function show(m){if(shown)return;shown=true;var e=document.getElementById('bootErr');if(!e)return;e.hidden=false;e.textContent='Qualcosa non ha funzionato nel caricamento: '+m+'. Mandami uno screenshot di questa schermata.';var b=document.getElementById('btnNew');if(b)b.textContent='Errore di caricamento'}
+window.__bootFail=show;window.addEventListener('error',function(ev){if(!window.__ready)show(ev.message||'errore sconosciuto')});
+setTimeout(function(){if(!window.__ready)show('il gioco ci mette troppo a partire (più di 40 secondi)')},40000)})();
+</script>
