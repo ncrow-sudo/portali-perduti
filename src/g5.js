@@ -119,17 +119,20 @@ function update(dt){
   const f=[Math.sin(cam.yaw),Math.cos(cam.yaw)],R=[-Math.cos(cam.yaw),Math.sin(cam.yaw)];let dx=f[0]*inp.f+R[0]*inp.s,dz=f[1]*inp.f+R[1]*inp.s;const ml=Math.hypot(dx,dz);if(ml>1){dx/=ml;dz/=ml}
   const k=tileAt(P.x,P.z),inWater=k>=0&&LV.tile[k]===3&&P.y<-.4;
   let sp=5.4*pcl().spd*(P.block?.5:1)*(inWater?.6:1)*(1-.12*Wc.snow)*(P.drawT>0?.55:1)*(P.atkT>=0?.45:1)*(P.shadowT>0?1.3:1);
-  if(P.falling>0){P.falling-=dt;P.vy-=22*dt;P.y+=P.vy*dt;if(P.falling<=0){placeP(P.safe[0],P.safe[1],P.yaw);P.iT=1;hurtPlayer(Math.round(P.maxHp*.1),null,true);toast('Che volo! Torni sul bordo');$('fade').style.opacity=0}}
+  if(P.falling>0){P.moving=P.mvx=P.mvz=0;P.falling-=dt;P.vy-=22*dt;P.y+=P.vy*dt;if(P.falling<=0){placeP(P.safe[0],P.safe[1],P.yaw);P.iT=1;hurtPlayer(Math.round(P.maxHp*.1),null,true);toast('Che volo! Torni sul bordo');$('fade').style.opacity=0}}
   else{if(P.chargeRun>0){P.chargeRun-=dt;dx=Math.sin(P.yaw);dz=Math.cos(P.yaw);sp=16;for(const e of ENT){if(e.dead||e.team!=='enemy'||P.chargeHit.has(e))continue;if(Math.hypot(e.x-P.x,e.z-P.z)<e.r+1.1){P.chargeHit.add(e);hitEnt(e,P.chargeDmg,{fromP:true,kx:dx,kz:dz,kb:12,stun:1.2});shake=.3}}if(Math.random()<.6)burst(P.x,P.y+.4,P.z,'#ffe0a0',3,2)}
-    else if(P.dashT>0){P.dashT-=dt;dx=P.dd[0];dz=P.dd[1];sp=14}moveEnt(P,dx*sp*dt,dz*sp*dt,true);P.moving=Math.hypot(dx,dz)*sp;
+    else if(P.dashT>0){P.dashT-=dt;dx=P.dd[0];dz=P.dd[1];sp=14}const ox=P.x,oz=P.z;moveEnt(P,dx*sp*dt,dz*sp*dt,true);
+    {const vx=(P.x-ox)/Math.max(dt,1e-3),vz=(P.z-oz)/Math.max(dt,1e-3),f=Math.min(1,dt*15);P.mvx=lerp(P.mvx||0,vx,f);P.mvz=lerp(P.mvz||0,vz,f);P.moving=Math.hypot(P.mvx,P.mvz)}
     if(inWater){moveEnt(P,LV.flow[k*2]*2.2*dt,LV.flow[k*2+1]*2.2*dt,true);if(Math.random()<dt*8&&P.moving>.5)burst(P.x,-.32,P.z,'#cfe8ff',3,1.5,.4)}
     const g=groundH(P.x,P.z);if(P.onGround){if(g<P.y-.6)P.onGround=false;else P.y=lerp(P.y,g,Math.min(1,dt*18))}
     if(!P.onGround){P.vy-=22*dt;P.y+=P.vy*dt;if(P.y<=g&&P.vy<=0){P.y=g;P.vy=0;P.onGround=true;sfx('land')}if(P.y<-2.5){P.falling=.6;$('fade').style.opacity=1;P.combo=0}}
     if(P.onGround&&k>=0&&LV.tile[k]===0&&!LV.plate[k]&&Math.hypot(P.x/TS%1-.5,P.z/TS%1-.5)<.3)P.safe=[P.x,P.z];
     if(P.onGround&&k>=0&&LV.plate[k]){const pl=PLATES.find(p=>p.k===k&&!p.used);if(pl)pressPlate(pl)}}
-  const aiming=P.atkT>=0||P.block||P.drawT>0||P.castT>0||(P.lock&&!P.lock.dead)||cam.fp;
   if(P.lock&&(P.lock.dead||Math.hypot(P.lock.x-P.x,P.lock.z-P.z)>24))P.lock=null;
-  if(P.chargeRun<=0){if(aiming)faceAim();else if(P.moving>.3)P.yaw+=angDiff(Math.atan2(dx,dz),P.yaw)*Math.min(1,dt*12)}
+  // il corpo guarda dove cammina; solo mischia e parata (e la prima persona) lo girano verso il bersaglio. Arco, magia e mira agganciata ruotano il busto.
+  const melee=P.atkT>=0||P.block,ranged=P.drawT>0||P.castT>0||(P.lock&&!P.lock.dead),ay=aimYaw(),turn=Math.min(1,dt*12);
+  if(P.chargeRun<=0){if(melee||cam.fp)faceAim();else if(P.moving>.3)P.yaw+=angDiff(Math.atan2(P.mvx,P.mvz),P.yaw)*turn;else if(ml>.1&&P.falling<=0)P.yaw+=angDiff(Math.atan2(dx,dz),P.yaw)*turn;else if(ranged)P.yaw+=angDiff(ay,P.yaw)*turn}
+  P.twist=ranged&&!melee&&!cam.fp&&P.chargeRun<=0?clamp(angDiff(ay,P.yaw),-1.3,1.3):0;
   P.block=blockDown&&!P.drawT&&P.dashT<=0;if(blockDown&&!P.wasBlock)P.blockT=now;P.wasBlock=blockDown;
   atkDown=(mouseAtk||touchAtk)&&!P.block;
   if(atkDown&&!atkPrev&&touchAtk)autoAim(w);autoAimTick(dt);
@@ -296,7 +299,7 @@ function updCamera(dt){if(P.lock&&!P.lock.dead&&!P.autoLock)cam.yaw+=angDiff(Mat
   camPos.copy(tgt).lerp(want,tt);camera.position.lerp(camPos,Math.min(1,dt*14));if(shake>0)camera.position.add(new THREE.Vector3(rr(-1,1),rr(-1,1),rr(-1,1)).multiplyScalar(shake*.25));
   camera.lookAt(tgt.clone().addScaledVector(f,2))}
 function updPlayerVisual(dt){pRoot.position.set(P.x,P.y,P.z);pRoot.rotation.y=P.yaw;pRoot.visible=!(P.falling>0&&P.y<-4);const w=P.inv[P.eq];
-  animHuman(H,{speed:P.onGround?P.moving||0:0,air:!P.onGround,atk:P.atkT,atkKind:P.atkKind,block:P.block||P.chargeRun>0?1:0,draw:P.drawT,cast:P.castT>0?1:0,dance:P.dance>0&&!cam.fp,fp:cam.fp,dead:P.mpDown>0},dt);
+  animHuman(H,{speed:P.onGround?P.moving||0:0,air:!P.onGround,atk:P.atkT,atkKind:P.atkKind,block:P.block||P.chargeRun>0?1:0,draw:P.drawT,cast:P.castT>0?1:0,dance:P.dance>0&&!cam.fp,fp:cam.fp,dead:P.mpDown>0,twist:P.twist||0},dt);
   if(P.iT>0&&!cam.fp)pRoot.visible=Math.sin(performance.now()/40)>-.3;
   if(shieldObj&&shieldObj.visible){const blk=P.block||P.chargeRun>0;orientChild(shieldObj,pRoot,blk?0:Math.PI/2,0,0);shieldObj.position.set(blk?-.05:.06,-.05,blk?.12:0)}
   if(weaponObj&&w&&w.base==='bow'){orientChild(weaponObj,pRoot,0,cam.fp?-cam.fpPitch:0,0);weaponObj.position.set(0,0,.05);const s=weaponObj.userData.string;if(s)s.position.x=-.04-P.drawT*.3}

@@ -145,7 +145,8 @@ function meleeTargets(range,arc,yaw){const out=[];for(const e of ENT){if(e.dead|
   return out.sort((a,b)=>a[0]-b[0]).map(v=>v[1])}
 function aimDir(from){if(P.lock&&!P.lock.dead){const t=new THREE.Vector3(P.lock.x,P.lock.y+1,P.lock.z);return t.sub(from).normalize()}const f=new THREE.Vector3();camera.getWorldDirection(f);const tgt=camera.position.clone().addScaledVector(f,30);return tgt.sub(from).normalize()}
 function aimPoint(dist){if(P.lock&&!P.lock.dead)return[P.lock.x,P.lock.z];return[P.x+Math.sin(P.yaw)*dist,P.z+Math.cos(P.yaw)*dist]}
-function faceAim(){if(P.lock&&!P.lock.dead)P.yaw=Math.atan2(P.lock.x-P.x,P.lock.z-P.z);else P.yaw=cam.yaw}
+function aimYaw(){return P.lock&&!P.lock.dead?Math.atan2(P.lock.x-P.x,P.lock.z-P.z):cam.yaw}
+function faceAim(){P.yaw=aimYaw()}
 function startAttack(w,kind){MP.atC=(MP.atC|0)+1;const b=WT[w.base];P.atkT=0;P.atkKind=kind||(b.thrust?'thrust':'swing');P.atkHit=false;P.atkDur=kind==='spin'?.55:w.base==='daggers'?.26:.42;P.cd=kind==='spin'?.6:w.cd;faceAim();sfx('swing')}
 function applyMelee(w,mult){const b=WT[w.base];const spin=P.atkKind==='spin';const tg=meleeTargets(b.range,spin?Math.PI:b.arc,P.yaw);const list=b.cleave||spin?tg:tg.slice(0,1);
   for(const e of list){if(e.kind==='basket'){openBasket(e);continue}const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz)||1;hitEnt(e,ri(w.min,w.max)*mult,{w,fromP:true,kx:dx/d,kz:dz/d,kb:(b.kb||3)*(spin?1.2:1),stun:b.stun})}
@@ -155,8 +156,8 @@ function shoot(o){const m=o.mesh;m.position.copy(o.pos);world.add(m);PROJ.push(O
 const arrowGeo=cyl(.02,.02,.9,5);arrowGeo.rotateX(Math.PI/2);
 function arrowMesh(el){const m=new THREE.Group();m.add(mesh(arrowGeo,M.wood,0,0,0,false));const tip=mesh(cone(.05,.14,4),el?glowM(ELEM[el].c):M.steel,0,0,.5,false);tip.rotateX(Math.PI/2);m.add(tip);return m}
 function fireBow(w,p){MP.shC=(MP.shC|0)+1;const from=new THREE.Vector3(P.x,P.y+1.45,P.z),dir=aimDir(from);const m=arrowMesh(w.el);m.lookAt(from.clone().add(dir));shoot({mesh:m,pos:from.addScaledVector(dir,.6),vel:dir.multiplyScalar(22+16*p),team:'ally',dmg:ri(w.min,w.max)*(.45+1.3*p),w,pierce:p>=1,grav:4,arrow:1,fromP:1});P.cd=w.cd;sfx('arrow')}
-function castMagic(w){const b=WT[w.base];if(P.mp<w.mana){P.cd=.3;toast('Mana esaurito, aspetta che si ricarichi');return}P.mp-=w.mana;P.cd=w.cd;P.castT=.25;faceAim();MP.shC=(MP.shC|0)+1;
-  const from=new THREE.Vector3(P.x+Math.sin(P.yaw)*.5,P.y+1.4,P.z+Math.cos(P.yaw)*.5),dir=aimDir(from),col=w.el?ELEM[w.el].c:b.poly?'#ffd23a':b.bubble?'#bfe8ff':'#ffffff';
+function castMagic(w){const b=WT[w.base];if(P.mp<w.mana){P.cd=.3;toast('Mana esaurito, aspetta che si ricarichi');return}P.mp-=w.mana;P.cd=w.cd;P.castT=.25;if(cam.fp)faceAim();MP.shC=(MP.shC|0)+1;
+  const ay=aimYaw(),from=new THREE.Vector3(P.x+Math.sin(ay)*.5,P.y+1.4,P.z+Math.cos(ay)*.5),dir=aimDir(from),col=w.el?ELEM[w.el].c:b.poly?'#ffd23a':b.bubble?'#bfe8ff':'#ffffff';
   const m=mesh(sph(b.aoe?.22:b.bubble?.3:.14,12,10),new THREE.MeshBasicMaterial({color:col,transparent:!!b.bubble,opacity:b.bubble?.5:1,toneMapped:false}),0,0,0,false);
   shoot({mesh:m,pos:from,vel:dir.multiplyScalar(b.bubble?9:16),team:'ally',dmg:ri(w.min,w.max),w,aoe:b.aoe,orb:col,fromP:1});sfx(b.poly?'chicken':b.bubble?'pop':'magic')}
 function explode(x,y,z,r,dmg,hurtsP,w,fromP){sfx('boom');shake=Math.max(shake,.3);burst(x,y,z,'#ff9a2a',30,6);burst(x,y,z,'#fff3a0',14,4);for(const e of ENT){if(e.dead||e.team!=='enemy')continue;const d=Math.hypot(e.x-x,e.z-z);if(d<r){const m=d||1;hitEnt(e,dmg,{w,chain:1,kx:(e.x-x)/m,kz:(e.z-z)/m,kb:6,fromP})}}

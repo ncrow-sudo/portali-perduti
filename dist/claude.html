@@ -727,6 +727,8 @@ function animHuman(H,p,dt){const sp=clamp(p.speed/4,0,1.4);H.ph+=dt*(4+p.speed*2
     else if(mv===1){const w=Math.sin(t*7),q=Math.cos(t*7);hy=.5;al={x:-1.3,z:.3};el={x:-.2};ar={x:-.5,z:-1};er={x:-.4};lh={x:-1.4+w*.9,z:.3+q*.4};rh={x:-1.2-w*.9,z:-.3};lk={x:1.6};rk={x:1+q*.5};tor={y:w*.6,x:.6}}
     else if(mv===2){hr={x:Math.PI,y:t*14,z:0,spin:1};hy=1.02;lh={x:0,z:.75+Math.sin(t*14)*.15};rh={x:0,z:-.75-Math.sin(t*14)*.15};lk={x:.1};rk={x:.1};al={x:0,z:2.2};ar={x:0,z:-2.2};el={x:0};er={x:0};tor={y:0,x:0}}
     else{hr={x:0,y:.3,z:1.15};hy=.62;ar={x:0,z:-2.9};er={x:0};al={x:-1.2,z:.5};el={x:-1.6};lh={x:-1.3,z:.6};rh={x:-.6,z:.2};lk={x:1.5};rk={x:2};tor={y:.2,x:-.2,z:-.1}}}
+  if(p.twist&&!p.dance&&!p.dead){tor={...tor,y:(tor.y||0)+p.twist*.65}}
+  H.head.rotation.y=lerp(H.head.rotation.y,p.dance||p.dead?0:(p.twist||0)*.35,Math.min(1,dt*12));
   L(H.legL.hip.rotation,lh);L(H.legR.hip.rotation,rh);L(H.legL.knee.rotation,lk);L(H.legR.knee.rotation,rk);L(H.armL.sh.rotation,al);L(H.armR.sh.rotation,ar);L(H.armL.el.rotation,el);L(H.armR.el.rotation,er);L(H.torso.rotation,tor);
   {const f=Math.min(1,dt*10),hrot=H.hips.rotation;if(hr){hrot.x=lerp(hrot.x,hr.x,f);hrot.z=lerp(hrot.z,hr.z,f);if(hr.spin)hrot.y=hr.y;else hrot.y=lerp(hrot.y,hr.y,f)}else if(hrot.x||hrot.y||hrot.z){hrot.y=((hrot.y%6.2832)+9.4248)%6.2832-3.1416;hrot.x=lerp(hrot.x,0,f);hrot.y=lerp(hrot.y,0,f);hrot.z=lerp(hrot.z,0,f);if(Math.abs(hrot.x)+Math.abs(hrot.y)+Math.abs(hrot.z)<.002)hrot.set(0,0,0)}}
   H.hips.position.y=lerp(H.hips.position.y,hy,Math.min(1,dt*12))}
@@ -1155,7 +1157,8 @@ function meleeTargets(range,arc,yaw){const out=[];for(const e of ENT){if(e.dead|
   return out.sort((a,b)=>a[0]-b[0]).map(v=>v[1])}
 function aimDir(from){if(P.lock&&!P.lock.dead){const t=new THREE.Vector3(P.lock.x,P.lock.y+1,P.lock.z);return t.sub(from).normalize()}const f=new THREE.Vector3();camera.getWorldDirection(f);const tgt=camera.position.clone().addScaledVector(f,30);return tgt.sub(from).normalize()}
 function aimPoint(dist){if(P.lock&&!P.lock.dead)return[P.lock.x,P.lock.z];return[P.x+Math.sin(P.yaw)*dist,P.z+Math.cos(P.yaw)*dist]}
-function faceAim(){if(P.lock&&!P.lock.dead)P.yaw=Math.atan2(P.lock.x-P.x,P.lock.z-P.z);else P.yaw=cam.yaw}
+function aimYaw(){return P.lock&&!P.lock.dead?Math.atan2(P.lock.x-P.x,P.lock.z-P.z):cam.yaw}
+function faceAim(){P.yaw=aimYaw()}
 function startAttack(w,kind){MP.atC=(MP.atC|0)+1;const b=WT[w.base];P.atkT=0;P.atkKind=kind||(b.thrust?'thrust':'swing');P.atkHit=false;P.atkDur=kind==='spin'?.55:w.base==='daggers'?.26:.42;P.cd=kind==='spin'?.6:w.cd;faceAim();sfx('swing')}
 function applyMelee(w,mult){const b=WT[w.base];const spin=P.atkKind==='spin';const tg=meleeTargets(b.range,spin?Math.PI:b.arc,P.yaw);const list=b.cleave||spin?tg:tg.slice(0,1);
   for(const e of list){if(e.kind==='basket'){openBasket(e);continue}const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz)||1;hitEnt(e,ri(w.min,w.max)*mult,{w,fromP:true,kx:dx/d,kz:dz/d,kb:(b.kb||3)*(spin?1.2:1),stun:b.stun})}
@@ -1165,8 +1168,8 @@ function shoot(o){const m=o.mesh;m.position.copy(o.pos);world.add(m);PROJ.push(O
 const arrowGeo=cyl(.02,.02,.9,5);arrowGeo.rotateX(Math.PI/2);
 function arrowMesh(el){const m=new THREE.Group();m.add(mesh(arrowGeo,M.wood,0,0,0,false));const tip=mesh(cone(.05,.14,4),el?glowM(ELEM[el].c):M.steel,0,0,.5,false);tip.rotateX(Math.PI/2);m.add(tip);return m}
 function fireBow(w,p){MP.shC=(MP.shC|0)+1;const from=new THREE.Vector3(P.x,P.y+1.45,P.z),dir=aimDir(from);const m=arrowMesh(w.el);m.lookAt(from.clone().add(dir));shoot({mesh:m,pos:from.addScaledVector(dir,.6),vel:dir.multiplyScalar(22+16*p),team:'ally',dmg:ri(w.min,w.max)*(.45+1.3*p),w,pierce:p>=1,grav:4,arrow:1,fromP:1});P.cd=w.cd;sfx('arrow')}
-function castMagic(w){const b=WT[w.base];if(P.mp<w.mana){P.cd=.3;toast('Mana esaurito, aspetta che si ricarichi');return}P.mp-=w.mana;P.cd=w.cd;P.castT=.25;faceAim();MP.shC=(MP.shC|0)+1;
-  const from=new THREE.Vector3(P.x+Math.sin(P.yaw)*.5,P.y+1.4,P.z+Math.cos(P.yaw)*.5),dir=aimDir(from),col=w.el?ELEM[w.el].c:b.poly?'#ffd23a':b.bubble?'#bfe8ff':'#ffffff';
+function castMagic(w){const b=WT[w.base];if(P.mp<w.mana){P.cd=.3;toast('Mana esaurito, aspetta che si ricarichi');return}P.mp-=w.mana;P.cd=w.cd;P.castT=.25;if(cam.fp)faceAim();MP.shC=(MP.shC|0)+1;
+  const ay=aimYaw(),from=new THREE.Vector3(P.x+Math.sin(ay)*.5,P.y+1.4,P.z+Math.cos(ay)*.5),dir=aimDir(from),col=w.el?ELEM[w.el].c:b.poly?'#ffd23a':b.bubble?'#bfe8ff':'#ffffff';
   const m=mesh(sph(b.aoe?.22:b.bubble?.3:.14,12,10),new THREE.MeshBasicMaterial({color:col,transparent:!!b.bubble,opacity:b.bubble?.5:1,toneMapped:false}),0,0,0,false);
   shoot({mesh:m,pos:from,vel:dir.multiplyScalar(b.bubble?9:16),team:'ally',dmg:ri(w.min,w.max),w,aoe:b.aoe,orb:col,fromP:1});sfx(b.poly?'chicken':b.bubble?'pop':'magic')}
 function explode(x,y,z,r,dmg,hurtsP,w,fromP){sfx('boom');shake=Math.max(shake,.3);burst(x,y,z,'#ff9a2a',30,6);burst(x,y,z,'#fff3a0',14,4);for(const e of ENT){if(e.dead||e.team!=='enemy')continue;const d=Math.hypot(e.x-x,e.z-z);if(d<r){const m=d||1;hitEnt(e,dmg,{w,chain:1,kx:(e.x-x)/m,kz:(e.z-z)/m,kb:6,fromP})}}
@@ -1314,17 +1317,20 @@ function update(dt){
   const f=[Math.sin(cam.yaw),Math.cos(cam.yaw)],R=[-Math.cos(cam.yaw),Math.sin(cam.yaw)];let dx=f[0]*inp.f+R[0]*inp.s,dz=f[1]*inp.f+R[1]*inp.s;const ml=Math.hypot(dx,dz);if(ml>1){dx/=ml;dz/=ml}
   const k=tileAt(P.x,P.z),inWater=k>=0&&LV.tile[k]===3&&P.y<-.4;
   let sp=5.4*pcl().spd*(P.block?.5:1)*(inWater?.6:1)*(1-.12*Wc.snow)*(P.drawT>0?.55:1)*(P.atkT>=0?.45:1)*(P.shadowT>0?1.3:1);
-  if(P.falling>0){P.falling-=dt;P.vy-=22*dt;P.y+=P.vy*dt;if(P.falling<=0){placeP(P.safe[0],P.safe[1],P.yaw);P.iT=1;hurtPlayer(Math.round(P.maxHp*.1),null,true);toast('Che volo! Torni sul bordo');$('fade').style.opacity=0}}
+  if(P.falling>0){P.moving=P.mvx=P.mvz=0;P.falling-=dt;P.vy-=22*dt;P.y+=P.vy*dt;if(P.falling<=0){placeP(P.safe[0],P.safe[1],P.yaw);P.iT=1;hurtPlayer(Math.round(P.maxHp*.1),null,true);toast('Che volo! Torni sul bordo');$('fade').style.opacity=0}}
   else{if(P.chargeRun>0){P.chargeRun-=dt;dx=Math.sin(P.yaw);dz=Math.cos(P.yaw);sp=16;for(const e of ENT){if(e.dead||e.team!=='enemy'||P.chargeHit.has(e))continue;if(Math.hypot(e.x-P.x,e.z-P.z)<e.r+1.1){P.chargeHit.add(e);hitEnt(e,P.chargeDmg,{fromP:true,kx:dx,kz:dz,kb:12,stun:1.2});shake=.3}}if(Math.random()<.6)burst(P.x,P.y+.4,P.z,'#ffe0a0',3,2)}
-    else if(P.dashT>0){P.dashT-=dt;dx=P.dd[0];dz=P.dd[1];sp=14}moveEnt(P,dx*sp*dt,dz*sp*dt,true);P.moving=Math.hypot(dx,dz)*sp;
+    else if(P.dashT>0){P.dashT-=dt;dx=P.dd[0];dz=P.dd[1];sp=14}const ox=P.x,oz=P.z;moveEnt(P,dx*sp*dt,dz*sp*dt,true);
+    {const vx=(P.x-ox)/Math.max(dt,1e-3),vz=(P.z-oz)/Math.max(dt,1e-3),f=Math.min(1,dt*15);P.mvx=lerp(P.mvx||0,vx,f);P.mvz=lerp(P.mvz||0,vz,f);P.moving=Math.hypot(P.mvx,P.mvz)}
     if(inWater){moveEnt(P,LV.flow[k*2]*2.2*dt,LV.flow[k*2+1]*2.2*dt,true);if(Math.random()<dt*8&&P.moving>.5)burst(P.x,-.32,P.z,'#cfe8ff',3,1.5,.4)}
     const g=groundH(P.x,P.z);if(P.onGround){if(g<P.y-.6)P.onGround=false;else P.y=lerp(P.y,g,Math.min(1,dt*18))}
     if(!P.onGround){P.vy-=22*dt;P.y+=P.vy*dt;if(P.y<=g&&P.vy<=0){P.y=g;P.vy=0;P.onGround=true;sfx('land')}if(P.y<-2.5){P.falling=.6;$('fade').style.opacity=1;P.combo=0}}
     if(P.onGround&&k>=0&&LV.tile[k]===0&&!LV.plate[k]&&Math.hypot(P.x/TS%1-.5,P.z/TS%1-.5)<.3)P.safe=[P.x,P.z];
     if(P.onGround&&k>=0&&LV.plate[k]){const pl=PLATES.find(p=>p.k===k&&!p.used);if(pl)pressPlate(pl)}}
-  const aiming=P.atkT>=0||P.block||P.drawT>0||P.castT>0||(P.lock&&!P.lock.dead)||cam.fp;
   if(P.lock&&(P.lock.dead||Math.hypot(P.lock.x-P.x,P.lock.z-P.z)>24))P.lock=null;
-  if(P.chargeRun<=0){if(aiming)faceAim();else if(P.moving>.3)P.yaw+=angDiff(Math.atan2(dx,dz),P.yaw)*Math.min(1,dt*12)}
+  // il corpo guarda dove cammina; solo mischia e parata (e la prima persona) lo girano verso il bersaglio. Arco, magia e mira agganciata ruotano il busto.
+  const melee=P.atkT>=0||P.block,ranged=P.drawT>0||P.castT>0||(P.lock&&!P.lock.dead),ay=aimYaw(),turn=Math.min(1,dt*12);
+  if(P.chargeRun<=0){if(melee||cam.fp)faceAim();else if(P.moving>.3)P.yaw+=angDiff(Math.atan2(P.mvx,P.mvz),P.yaw)*turn;else if(ml>.1&&P.falling<=0)P.yaw+=angDiff(Math.atan2(dx,dz),P.yaw)*turn;else if(ranged)P.yaw+=angDiff(ay,P.yaw)*turn}
+  P.twist=ranged&&!melee&&!cam.fp&&P.chargeRun<=0?clamp(angDiff(ay,P.yaw),-1.3,1.3):0;
   P.block=blockDown&&!P.drawT&&P.dashT<=0;if(blockDown&&!P.wasBlock)P.blockT=now;P.wasBlock=blockDown;
   atkDown=(mouseAtk||touchAtk)&&!P.block;
   if(atkDown&&!atkPrev&&touchAtk)autoAim(w);autoAimTick(dt);
@@ -1491,7 +1497,7 @@ function updCamera(dt){if(P.lock&&!P.lock.dead&&!P.autoLock)cam.yaw+=angDiff(Mat
   camPos.copy(tgt).lerp(want,tt);camera.position.lerp(camPos,Math.min(1,dt*14));if(shake>0)camera.position.add(new THREE.Vector3(rr(-1,1),rr(-1,1),rr(-1,1)).multiplyScalar(shake*.25));
   camera.lookAt(tgt.clone().addScaledVector(f,2))}
 function updPlayerVisual(dt){pRoot.position.set(P.x,P.y,P.z);pRoot.rotation.y=P.yaw;pRoot.visible=!(P.falling>0&&P.y<-4);const w=P.inv[P.eq];
-  animHuman(H,{speed:P.onGround?P.moving||0:0,air:!P.onGround,atk:P.atkT,atkKind:P.atkKind,block:P.block||P.chargeRun>0?1:0,draw:P.drawT,cast:P.castT>0?1:0,dance:P.dance>0&&!cam.fp,fp:cam.fp,dead:P.mpDown>0},dt);
+  animHuman(H,{speed:P.onGround?P.moving||0:0,air:!P.onGround,atk:P.atkT,atkKind:P.atkKind,block:P.block||P.chargeRun>0?1:0,draw:P.drawT,cast:P.castT>0?1:0,dance:P.dance>0&&!cam.fp,fp:cam.fp,dead:P.mpDown>0,twist:P.twist||0},dt);
   if(P.iT>0&&!cam.fp)pRoot.visible=Math.sin(performance.now()/40)>-.3;
   if(shieldObj&&shieldObj.visible){const blk=P.block||P.chargeRun>0;orientChild(shieldObj,pRoot,blk?0:Math.PI/2,0,0);shieldObj.position.set(blk?-.05:.06,-.05,blk?.12:0)}
   if(weaponObj&&w&&w.base==='bow'){orientChild(weaponObj,pRoot,0,cam.fp?-cam.fpPitch:0,0);weaponObj.position.set(0,0,.05);const s=weaponObj.userData.string;if(s)s.position.x=-.04-P.drawT*.3}
@@ -1591,25 +1597,25 @@ function remoteRec(p){let r=MP.remotes.get(p.peer);const pr=p.presence;
   if(pr.w!==r.w&&WT[pr.w]){if(r.wObj&&r.wObj.parent)r.wObj.parent.remove(r.wObj);r.w=pr.w;r.wObj=makeWeaponMesh({base:pr.w,rar:1,el:ELEM[pr.el]?pr.el:null});if(pr.w==='bow')r.H.armL.hand.add(r.wObj);else{r.H.armR.hand.add(r.wObj);r.wObj.rotation.x=-.25}
     if(!r.sObj&&PCLASS[r.cls].shield){r.sObj=makeShield((pr.lk&&pr.lk.shield)|0);r.H.armL.hand.add(r.sObj)}if(r.sObj)r.sObj.visible=pr.w!=='bow'}
   const pp=Array.isArray(pr.p)?pr.p:[0,0,0,0];r.tx=pp[0]/100;r.ty=pp[1]/100;r.tz=pp[2]/100;r.tyaw=pp[3]/100;if(r.first){r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw;r.first=false}
-  const hp=Array.isArray(pr.hp)?pr.hp:[1,1];r.hp=+hp[0]||0;r.maxHp=Math.max(1,+hp[1]||1);r.down=r.hp<=0||!!pr.sd;r.mvS=+pr.mv||0;r.air=!!pr.ag;r.block=!!pr.bl;r.draw=(+pr.dr||0)/10;r.cast=!!pr.cs;r.dance=!!pr.dn;r.dead=false;
+  const hp=Array.isArray(pr.hp)?pr.hp:[1,1];r.hp=+hp[0]||0;r.maxHp=Math.max(1,+hp[1]||1);r.down=r.hp<=0||!!pr.sd;r.mvS=+pr.mv||0;r.air=!!pr.ag;r.block=!!pr.bl;r.draw=(+pr.dr||0)/10;r.cast=!!pr.cs;r.dance=!!pr.dn;r.dead=false;r.ay=typeof pr.ay==='number'?pr.ay/100:null;
   if((pr.at|0)!==r.at){r.at=pr.at|0;r.atkT=0;r.atkKind=pr.ak==='t'?'thrust':pr.ak==='s'?'spin':'swing'}
   if((pr.sh|0)!==r.sh){r.sh=pr.sh|0;if(r.inGame&&r.w)remoteShot(r,+pr.pi||0,pr.el)}
   if(pr.rvp&&MP.me&&pr.rvp===MP.me&&(pr.rv|0)>(r.rvSeen|0)){if(P.mpDown>0)MP.revived=1}r.rvSeen=pr.rv|0;
   if((pr.ab|0)!==r.ab){r.ab=pr.ab|0;if(r.inGame){burst(r.x,r.y+1,r.z,'#c88aff',24,3);float(r.x,r.y+2.6,r.z,PCLASS[r.cls].abN+'!','#e0c0ff',1)}}
   return r}
-function remoteShot(r,pitch,el){const b=WT[r.w];if(!b||b.kind==='melee')return;const dir=new THREE.Vector3(Math.sin(r.yaw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(r.yaw)*Math.cos(pitch));const from=new THREE.Vector3(r.x,r.y+1.45,r.z).addScaledVector(dir,.6);
+function remoteShot(r,pitch,el){const b=WT[r.w];if(!b||b.kind==='melee')return;const yw=r.ay!=null?r.ay:r.yaw,dir=new THREE.Vector3(Math.sin(yw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(yw)*Math.cos(pitch));const from=new THREE.Vector3(r.x,r.y+1.45,r.z).addScaledVector(dir,.6);
   if(b.kind==='bow'){const m=arrowMesh(ELEM[el]?el:null);m.lookAt(from.clone().add(dir));shoot({mesh:m,pos:from,vel:dir.multiplyScalar(30),team:'fx',grav:4,arrow:1,life:1.5});sfx('arrow',.3)}
   else{const col=ELEM[el]?ELEM[el].c:'#ffffff';shoot({mesh:mesh(sph(.15,10,8),new THREE.MeshBasicMaterial({color:col,toneMapped:false}),0,0,0,false),pos:from,vel:dir.multiplyScalar(16),team:'fx',orb:col,life:1.5});sfx('magic',.3)}}
 function updRemotes(dt){MP.remotes.forEach(r=>{if(!r.inGame){if(r.root.parent)r.root.parent.remove(r.root);return}if(r.root.parent!==world)world.add(r.root);
   const k=Math.min(1,dt*12);r.x=lerp(r.x,r.tx,k);r.z=lerp(r.z,r.tz,k);r.y=lerp(r.y,r.ty,k);r.yaw+=angDiff(r.tyaw,r.yaw)*k;if(Math.hypot(r.tx-r.x,r.tz-r.z)>8){r.x=r.tx;r.z=r.tz;r.y=r.ty}
   if(r.atkT>=0){r.atkT+=dt/.42;if(r.atkT>=1)r.atkT=-1}r.root.position.set(r.x,r.y,r.z);r.root.rotation.y=r.yaw;
-  animHuman(r.H,{speed:r.down?0:r.mvS,air:r.air,atk:r.atkT,atkKind:r.atkKind,block:r.block?1:0,draw:r.draw,cast:r.cast?1:0,dance:r.dance,dead:r.hp<=0},dt)})}
+  animHuman(r.H,{speed:r.down?0:r.mvS,air:r.air,atk:r.atkT,atkKind:r.atkKind,block:r.block?1:0,draw:r.draw,cast:r.cast?1:0,dance:r.dance,dead:r.hp<=0,twist:(r.draw>0||r.cast)&&r.ay!=null&&r.atkT<0&&!r.block?clamp(angDiff(r.ay,r.yaw),-1.3,1.3):0},dt)})}
 
 // ---------- presence out ----------
 function mpSend(force){if(!MP.r)return;MP.sendT-=1;if(!force&&MP.sendT>0)return;MP.sendT=6;const w=P.inv[P.eq];
   const o={n:P.name,c:P.cls,lv:P.lvl,lk:P.look,st:'play',fl:floor,host:MP.host?1:0,p:[Math.round(P.x*100),Math.round(P.y*100),Math.round(P.z*100),Math.round(P.yaw*100)],
     hp:[Math.max(0,Math.round(P.hp)),P.maxHp],mv:Math.round(P.moving||0),ag:P.onGround?0:1,bl:P.block?1:0,dr:Math.round((P.drawT||0)*10),cs:P.castT>0?1:0,dn:P.dance>0?1:0,sd:P.shadowT>0?1:0,
-    w:w?w.base:null,el:w&&w.el||null,at:MP.atC|0,ak:P.atkKind==='thrust'?'t':P.atkKind==='spin'?'s':'w',sh:MP.shC|0,pi:Math.round((cam.fp?cam.fpPitch:0)*100)/100,ab:MP.abC|0};
+    w:w?w.base:null,el:w&&w.el||null,at:MP.atC|0,ak:P.atkKind==='thrust'?'t':P.atkKind==='spin'?'s':'w',sh:MP.shC|0,pi:Math.round((cam.fp?cam.fpPitch:0)*100)/100,ay:Math.round(aimYaw()*100),ab:MP.abC|0};
   if(MP.host){o.seed=seedBase;o.rs=MP.route?MP.route.seed:0;o.nd=MP.rcur||null;o.ch=RM.open?1:0;o.fin=MP.fin|0;o.xp=MP.xpT;o.gd=MP.gdT;o.kc=MP.kcT;o.ke=MP.keT;o.bk=MP.bkT;o.hd={};MP.remotes.forEach(r=>{if(r.inGame&&MP.hd[r.peer])o.hd['p'+r.peer.replace(/[^A-Za-z0-9_-]/g,'')]=MP.hd[r.peer]});
     o.gt=GATES.map((g,i)=>g.open||g.lifting?i:-1).filter(i=>i>=0);
     const pts=[[P.x,P.z]];MP.remotes.forEach(r=>{if(r.inGame)pts.push([r.x,r.z])});const near=e=>Math.min(...pts.map(q=>Math.hypot(e.x-q[0],e.z-q[1])));

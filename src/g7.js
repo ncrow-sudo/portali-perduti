@@ -91,25 +91,25 @@ function remoteRec(p){let r=MP.remotes.get(p.peer);const pr=p.presence;
   if(pr.w!==r.w&&WT[pr.w]){if(r.wObj&&r.wObj.parent)r.wObj.parent.remove(r.wObj);r.w=pr.w;r.wObj=makeWeaponMesh({base:pr.w,rar:1,el:ELEM[pr.el]?pr.el:null});if(pr.w==='bow')r.H.armL.hand.add(r.wObj);else{r.H.armR.hand.add(r.wObj);r.wObj.rotation.x=-.25}
     if(!r.sObj&&PCLASS[r.cls].shield){r.sObj=makeShield((pr.lk&&pr.lk.shield)|0);r.H.armL.hand.add(r.sObj)}if(r.sObj)r.sObj.visible=pr.w!=='bow'}
   const pp=Array.isArray(pr.p)?pr.p:[0,0,0,0];r.tx=pp[0]/100;r.ty=pp[1]/100;r.tz=pp[2]/100;r.tyaw=pp[3]/100;if(r.first){r.x=r.tx;r.y=r.ty;r.z=r.tz;r.yaw=r.tyaw;r.first=false}
-  const hp=Array.isArray(pr.hp)?pr.hp:[1,1];r.hp=+hp[0]||0;r.maxHp=Math.max(1,+hp[1]||1);r.down=r.hp<=0||!!pr.sd;r.mvS=+pr.mv||0;r.air=!!pr.ag;r.block=!!pr.bl;r.draw=(+pr.dr||0)/10;r.cast=!!pr.cs;r.dance=!!pr.dn;r.dead=false;
+  const hp=Array.isArray(pr.hp)?pr.hp:[1,1];r.hp=+hp[0]||0;r.maxHp=Math.max(1,+hp[1]||1);r.down=r.hp<=0||!!pr.sd;r.mvS=+pr.mv||0;r.air=!!pr.ag;r.block=!!pr.bl;r.draw=(+pr.dr||0)/10;r.cast=!!pr.cs;r.dance=!!pr.dn;r.dead=false;r.ay=typeof pr.ay==='number'?pr.ay/100:null;
   if((pr.at|0)!==r.at){r.at=pr.at|0;r.atkT=0;r.atkKind=pr.ak==='t'?'thrust':pr.ak==='s'?'spin':'swing'}
   if((pr.sh|0)!==r.sh){r.sh=pr.sh|0;if(r.inGame&&r.w)remoteShot(r,+pr.pi||0,pr.el)}
   if(pr.rvp&&MP.me&&pr.rvp===MP.me&&(pr.rv|0)>(r.rvSeen|0)){if(P.mpDown>0)MP.revived=1}r.rvSeen=pr.rv|0;
   if((pr.ab|0)!==r.ab){r.ab=pr.ab|0;if(r.inGame){burst(r.x,r.y+1,r.z,'#c88aff',24,3);float(r.x,r.y+2.6,r.z,PCLASS[r.cls].abN+'!','#e0c0ff',1)}}
   return r}
-function remoteShot(r,pitch,el){const b=WT[r.w];if(!b||b.kind==='melee')return;const dir=new THREE.Vector3(Math.sin(r.yaw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(r.yaw)*Math.cos(pitch));const from=new THREE.Vector3(r.x,r.y+1.45,r.z).addScaledVector(dir,.6);
+function remoteShot(r,pitch,el){const b=WT[r.w];if(!b||b.kind==='melee')return;const yw=r.ay!=null?r.ay:r.yaw,dir=new THREE.Vector3(Math.sin(yw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(yw)*Math.cos(pitch));const from=new THREE.Vector3(r.x,r.y+1.45,r.z).addScaledVector(dir,.6);
   if(b.kind==='bow'){const m=arrowMesh(ELEM[el]?el:null);m.lookAt(from.clone().add(dir));shoot({mesh:m,pos:from,vel:dir.multiplyScalar(30),team:'fx',grav:4,arrow:1,life:1.5});sfx('arrow',.3)}
   else{const col=ELEM[el]?ELEM[el].c:'#ffffff';shoot({mesh:mesh(sph(.15,10,8),new THREE.MeshBasicMaterial({color:col,toneMapped:false}),0,0,0,false),pos:from,vel:dir.multiplyScalar(16),team:'fx',orb:col,life:1.5});sfx('magic',.3)}}
 function updRemotes(dt){MP.remotes.forEach(r=>{if(!r.inGame){if(r.root.parent)r.root.parent.remove(r.root);return}if(r.root.parent!==world)world.add(r.root);
   const k=Math.min(1,dt*12);r.x=lerp(r.x,r.tx,k);r.z=lerp(r.z,r.tz,k);r.y=lerp(r.y,r.ty,k);r.yaw+=angDiff(r.tyaw,r.yaw)*k;if(Math.hypot(r.tx-r.x,r.tz-r.z)>8){r.x=r.tx;r.z=r.tz;r.y=r.ty}
   if(r.atkT>=0){r.atkT+=dt/.42;if(r.atkT>=1)r.atkT=-1}r.root.position.set(r.x,r.y,r.z);r.root.rotation.y=r.yaw;
-  animHuman(r.H,{speed:r.down?0:r.mvS,air:r.air,atk:r.atkT,atkKind:r.atkKind,block:r.block?1:0,draw:r.draw,cast:r.cast?1:0,dance:r.dance,dead:r.hp<=0},dt)})}
+  animHuman(r.H,{speed:r.down?0:r.mvS,air:r.air,atk:r.atkT,atkKind:r.atkKind,block:r.block?1:0,draw:r.draw,cast:r.cast?1:0,dance:r.dance,dead:r.hp<=0,twist:(r.draw>0||r.cast)&&r.ay!=null&&r.atkT<0&&!r.block?clamp(angDiff(r.ay,r.yaw),-1.3,1.3):0},dt)})}
 
 // ---------- presence out ----------
 function mpSend(force){if(!MP.r)return;MP.sendT-=1;if(!force&&MP.sendT>0)return;MP.sendT=6;const w=P.inv[P.eq];
   const o={n:P.name,c:P.cls,lv:P.lvl,lk:P.look,st:'play',fl:floor,host:MP.host?1:0,p:[Math.round(P.x*100),Math.round(P.y*100),Math.round(P.z*100),Math.round(P.yaw*100)],
     hp:[Math.max(0,Math.round(P.hp)),P.maxHp],mv:Math.round(P.moving||0),ag:P.onGround?0:1,bl:P.block?1:0,dr:Math.round((P.drawT||0)*10),cs:P.castT>0?1:0,dn:P.dance>0?1:0,sd:P.shadowT>0?1:0,
-    w:w?w.base:null,el:w&&w.el||null,at:MP.atC|0,ak:P.atkKind==='thrust'?'t':P.atkKind==='spin'?'s':'w',sh:MP.shC|0,pi:Math.round((cam.fp?cam.fpPitch:0)*100)/100,ab:MP.abC|0};
+    w:w?w.base:null,el:w&&w.el||null,at:MP.atC|0,ak:P.atkKind==='thrust'?'t':P.atkKind==='spin'?'s':'w',sh:MP.shC|0,pi:Math.round((cam.fp?cam.fpPitch:0)*100)/100,ay:Math.round(aimYaw()*100),ab:MP.abC|0};
   if(MP.host){o.seed=seedBase;o.rs=MP.route?MP.route.seed:0;o.nd=MP.rcur||null;o.ch=RM.open?1:0;o.fin=MP.fin|0;o.xp=MP.xpT;o.gd=MP.gdT;o.kc=MP.kcT;o.ke=MP.keT;o.bk=MP.bkT;o.hd={};MP.remotes.forEach(r=>{if(r.inGame&&MP.hd[r.peer])o.hd['p'+r.peer.replace(/[^A-Za-z0-9_-]/g,'')]=MP.hd[r.peer]});
     o.gt=GATES.map((g,i)=>g.open||g.lifting?i:-1).filter(i=>i>=0);
     const pts=[[P.x,P.z]];MP.remotes.forEach(r=>{if(r.inGame)pts.push([r.x,r.z])});const near=e=>Math.min(...pts.map(q=>Math.hypot(e.x-q[0],e.z-q[1])));

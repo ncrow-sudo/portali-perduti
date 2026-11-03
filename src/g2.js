@@ -51,6 +51,8 @@ function animHuman(H,p,dt){const sp=clamp(p.speed/4,0,1.4);H.ph+=dt*(4+p.speed*2
     else if(mv===1){const w=Math.sin(t*7),q=Math.cos(t*7);hy=.5;al={x:-1.3,z:.3};el={x:-.2};ar={x:-.5,z:-1};er={x:-.4};lh={x:-1.4+w*.9,z:.3+q*.4};rh={x:-1.2-w*.9,z:-.3};lk={x:1.6};rk={x:1+q*.5};tor={y:w*.6,x:.6}}
     else if(mv===2){hr={x:Math.PI,y:t*14,z:0,spin:1};hy=1.02;lh={x:0,z:.75+Math.sin(t*14)*.15};rh={x:0,z:-.75-Math.sin(t*14)*.15};lk={x:.1};rk={x:.1};al={x:0,z:2.2};ar={x:0,z:-2.2};el={x:0};er={x:0};tor={y:0,x:0}}
     else{hr={x:0,y:.3,z:1.15};hy=.62;ar={x:0,z:-2.9};er={x:0};al={x:-1.2,z:.5};el={x:-1.6};lh={x:-1.3,z:.6};rh={x:-.6,z:.2};lk={x:1.5};rk={x:2};tor={y:.2,x:-.2,z:-.1}}}
+  if(p.twist&&!p.dance&&!p.dead){tor={...tor,y:(tor.y||0)+p.twist*.65}}
+  H.head.rotation.y=lerp(H.head.rotation.y,p.dance||p.dead?0:(p.twist||0)*.35,Math.min(1,dt*12));
   L(H.legL.hip.rotation,lh);L(H.legR.hip.rotation,rh);L(H.legL.knee.rotation,lk);L(H.legR.knee.rotation,rk);L(H.armL.sh.rotation,al);L(H.armR.sh.rotation,ar);L(H.armL.el.rotation,el);L(H.armR.el.rotation,er);L(H.torso.rotation,tor);
   {const f=Math.min(1,dt*10),hrot=H.hips.rotation;if(hr){hrot.x=lerp(hrot.x,hr.x,f);hrot.z=lerp(hrot.z,hr.z,f);if(hr.spin)hrot.y=hr.y;else hrot.y=lerp(hrot.y,hr.y,f)}else if(hrot.x||hrot.y||hrot.z){hrot.y=((hrot.y%6.2832)+9.4248)%6.2832-3.1416;hrot.x=lerp(hrot.x,0,f);hrot.y=lerp(hrot.y,0,f);hrot.z=lerp(hrot.z,0,f);if(Math.abs(hrot.x)+Math.abs(hrot.y)+Math.abs(hrot.z)<.002)hrot.set(0,0,0)}}
   H.hips.position.y=lerp(H.hips.position.y,hy,Math.min(1,dt*12))}
