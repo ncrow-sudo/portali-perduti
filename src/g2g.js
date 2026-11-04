@@ -67,6 +67,7 @@ function makeGltfHuman(L,scale,o){
   const H={gltf:true,cls:o.cls,root,inner,model,hips:B('hips'),torso:chest,spine,head,
     armL:{hand:handL,shield:shieldL},armR:{hand:handR},eye,fpHide,mats,bw:1,ph:Math.random()*6,mixer,act,acts,sock,k:S.k,t:Math.random()*5,lastAtk:-1,castOn:0};
   for(const n of['Idle','Walking_A','Running_A'])act(n);
+  if(o.lvl)try{applyRankGltf(H,rankIdx(o.lvl))}catch(e){console.warn('rank',e)}
   acts.Idle.time=Math.random()*acts.Idle.getClip().duration;
   return H}
 
@@ -114,3 +115,20 @@ function applyArmorGltf(Hh,t){const m=armorMat(t),s=Hh.sock,add=(par,o)=>{o.user
   for(const kn of[s.knL,s.knR])add(kn,mesh(sph(.07,8,6),m,0,.02,.08));
   if(t>=4){const ci=add(s.head,mesh(new THREE.TorusGeometry(.25,.025,6,18),m,0,.62,0));ci.rotation.x=Math.PI/2;add(s.head,mesh(sph(.04,8,6),t>=6?new THREE.MeshBasicMaterial({color:0xffffff}):M.gold,0,.64,.25,false))}
   if(t>=6)add(s.chest,mesh(new THREE.OctahedronGeometry(.06),new THREE.MeshBasicMaterial({color:t===7?0xff80ff:0xbff4ff,toneMapped:false}),0,.14,.27,false))}
+
+// ================= v2: armatura che cambia col rango =================
+// Le parti grigie (metallo) della texture prendono il colore del rango: Legno originale, poi bronzo, argento, oro,
+// platino, diamante. In più: spallacci dal Bronzo, corona dall'Oro, gemme che brillano dal Platino, alone dal Diamante.
+const RANK_METAL=[null,[205,127,60],[226,232,242],[255,196,64],[130,232,222],[150,205,255]],RANK_TEX={};
+function glbRankTex(src,rk){const key=src.uuid+'|'+rk;if(RANK_TEX[key])return RANK_TEX[key];const img=src.image;if(!img||!img.width)return src;
+  const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height),p=d.data,col=RANK_METAL[rk];
+  for(let i=0;i<p.length;i+=4){const r=p[i],g=p[i+1],b=p[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510,sat=mx?(mx-mn)/mx:0;
+    if(sat<.14&&l>.22&&l<.93){const k=Math.min(1.25,l*1.25);p[i]=Math.min(255,col[0]*k);p[i+1]=Math.min(255,col[1]*k);p[i+2]=Math.min(255,col[2]*k)}}
+  x.putImageData(d,0,0);const t=new THREE.CanvasTexture(c);t.flipY=src.flipY;t.encoding=src.encoding;t.wrapS=src.wrapS;t.wrapT=src.wrapT;t.magFilter=src.magFilter;t.minFilter=src.minFilter;t.anisotropy=4;RANK_TEX[key]=t;return t}
+function applyRankGltf(H,rk){if(!H||!H.gltf)return;rk=clamp(rk|0,0,5);
+  if(rk>0)H.model.traverse(n=>{if(n.isMesh&&n.material.map&&!/_Head(_Hooded)?$/.test(n.name)){n.material.map=glbRankTex(n.material.map,rk);n.material.needsUpdate=true;if(rk>=2){n.material.metalness=Math.max(n.material.metalness||0,.25);n.material.roughness=Math.min(n.material.roughness==null?1:n.material.roughness,.6)}}});
+  const s=H.sock,c=RANK_METAL[rk],hex=c?(c[0]<<16|c[1]<<8|c[2]):0,mm=std({color:hex,metalness:.7,roughness:.3}),add=(par,o)=>{o.userData.rankGear=1;par.add(o);return o};
+  if(rk>=1)for(const sh of[s.shL,s.shR]){const p=add(sh,mesh(new THREE.SphereGeometry(.2,10,8,0,Math.PI*2,0,Math.PI/2),mm,0,.1,0));p.scale.set(1.2,.75,1.15)}
+  if(rk>=3){const cr=new THREE.Group();cr.userData.rankGear=1;cr.position.set(0,1.16,0);s.head.add(cr);cr.add(mesh(cyl(.36,.4,.14,16,1,true),mm,0,0,0));for(let q=0;q<7;q++){const a=q/7*Math.PI*2,sp=mesh(cone(.06,.2,4),mm,Math.sin(a)*.37,.16,Math.cos(a)*.37);cr.add(sp)}}
+  if(rk>=4){const gem=glowM(rk>=5?0xbfe8ff:0x9affea);add(s.chest,mesh(new THREE.OctahedronGeometry(.09),gem,0,.25,.42,false));add(s.head,mesh(new THREE.OctahedronGeometry(.08),gem,0,1.18,.4,false))}
+  if(rk>=5){const halo=mesh(new THREE.TorusGeometry(.42,.035,6,28),glowM(0xdff4ff),0,1.55,-.05,false);halo.rotation.x=Math.PI/2;add(s.head,halo)}}

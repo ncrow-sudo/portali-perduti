@@ -49,7 +49,7 @@ const squadCap=()=>3;
 let allies=[];
 const pcl=()=>PCLASS[P.cls];
 function recalcStats(){const c=pcl(),l=P.lvl;P.maxHp=Math.round(c.hp*(1+.06*(l-1))+P.camp.tenda*20+armorHp());P.maxMp=Math.round(c.mp*(1+.03*(l-1)));P.dmgM=1+.05*(l-1)+.08*rankIdx(l)}
-function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);(H.armL.shield||H.armL.hand).add(shieldObj);auraObj=null;equipVisual();setAura()}
+function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls,lvl:P.lvl});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);(H.armL.shield||H.armL.hand).add(shieldObj);auraObj=null;equipVisual();setAura()}
 function setAura(){if(auraObj)pRoot.remove(auraObj);const ri_=rankIdx(P.lvl);if(ri_<1){auraObj=null;return}auraObj=makeAura(RANKS[ri_][2]);pRoot.add(auraObj)}
 function equipVisual(){if(!H)return;for(const o of[weaponObj,weapon2])if(o&&o.parent)o.parent.remove(o);weapon2=null;const w=P.inv[P.eq];shieldObj.visible=!!pcl().shield;if(!w)return;weaponObj=makeWeaponMesh(w);
   if(w.base==='bow'){H.armL.hand.add(weaponObj);shieldObj.visible=false}else{H.armR.hand.add(weaponObj);weaponObj.rotation.x=-.25;if(w.base==='daggers'&&!pcl().shield){weapon2=makeWeaponMesh(w);weapon2.rotation.x=-.25;H.armL.hand.add(weapon2)}}}
@@ -79,7 +79,7 @@ function spawnMon(type,x,z,lvl){if(MP.client&&!MP.allowSpawn)return{dead:true,ob
   e.maxHp=e.hp;e.mid=++MP.midC;e.room=LV&&!LV.camp?LV.room[tileAt(x,z)]:-1;e.obj.position.set(x,0,z);return addEnt(e)}
 
 // ================= Allies =================
-function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
+function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls,lvl:d.lvl||1}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
   if(wb==='bow')h.armL.hand.add(w);else{h.armR.hand.add(w);w.rotation.x=-.25}let sh=null;if(cl.shield){sh=makeShield(d.look.shield);(h.armL.shield||h.armL.hand).add(sh)}
   const lvl=d.lvl||1,rk_=BRAR[d.rar|0]||BRAR[0],mh=Math.round(cl.hp*.7*(1+.07*(lvl-1))*rk_.m);
   const e={kind:'ally',team:'ally',cls:d.cls,name:d.name,look:d.look,data:d,x:P.x+rr(-1,1),z:P.z+rr(-1,1),y:0,vy:0,yaw:0,hp:mh,maxHp:mh,dmg:(cl.range>3?8:10)*(1+.08*(lvl-1))*rk_.m,rar:d.rar|0,spd:5.4*cl.spd,r:.4,obj:h.root,H:h,mats:h.mats,shield:sh,weapon:w,
@@ -110,7 +110,7 @@ function banner(big,small,ms=2200){const b=$('banner');b.innerHTML='';const s=do
 function showCombo(){const c=$('combo');if(P.combo>=3){c.innerHTML='';const s=document.createElement('small');s.textContent='COMBO';c.append(s,document.createTextNode('x'+P.combo));c.style.opacity=1}else c.style.opacity=0}
 let freeze=0,shake=0,hurtT=0;
 function gainXP(n){if(P.lvl>=50)return;P.xp+=n;let up=false,rankUp=false;while(P.lvl<50&&P.xp>=xpNeed(P.lvl)){P.xp-=xpNeed(P.lvl);const r0=rankIdx(P.lvl);P.lvl++;up=true;if(rankIdx(P.lvl)>r0)rankUp=true}
-  if(up){vib([60,40,60]);recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){setAura();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
+  if(up){vib([60,40,60]);recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){buildPlayer();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
 function allyXP(n){for(const a of allies){const d=a.data;d.xp=(d.xp||0)+n;if(d.xp>=xpNeed(d.lvl)*.8&&d.lvl<50){d.xp=0;d.lvl++;a.lvl=d.lvl;a.maxHp=Math.round(PCLASS[a.cls].hp*.7*(1+.07*(d.lvl-1))*(BRAR[d.rar|0]||BRAR[0]).m);a.hp=a.maxHp;a.dmg*=1.08;float(a.x,a.y+2.3,a.z,`${a.name} liv. ${d.lvl}`,'#7be36b');say(a,'level')}}}
 
 // ================= Combat =================

@@ -84,7 +84,7 @@ function mpGhost(e,dt){e.flash-=dt;if(e.mats)for(const m of e.mats)m.emissive&&m
 
 // ---------- remote players ----------
 function remoteRec(p){let r=MP.remotes.get(p.peer);const pr=p.presence;
-  if(!r){const look=pr.lk&&typeof pr.lk==='object'?pr.lk:randLook();let H_;try{H_=makeHumanoid(look,1,{cls:PCLASS[pr.c]?pr.c:null})}catch(e){H_=makeHumanoid(randLook())}
+  if(!r){const look=pr.lk&&typeof pr.lk==='object'?pr.lk:randLook();let H_;try{H_=makeHumanoid(look,1,{cls:PCLASS[pr.c]?pr.c:null,lvl:pr.lv|0})}catch(e){H_=makeHumanoid(randLook())}
     r={peer:p.peer,kind:'remote',team:'ally',H:H_,root:H_.root,x:0,z:0,y:0,yaw:0,tx:0,tz:0,ty:0,tyaw:0,r:.4,hp:100,maxHp:100,at:pr.at|0,atkT:-1,sh:pr.sh|0,ab:pr.ab|0,w:null,wObj:null,sObj:null,first:true,inGame:false,down:false,dead:false,name:'',cls:'cavaliere',lv:1};
     MP.remotes.set(p.peer,r)}
   r.name=String(pr.n||'Amico').slice(0,14);r.cls=PCLASS[pr.c]?pr.c:'cavaliere';r.lv=pr.lv|0;

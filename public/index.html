@@ -7475,6 +7475,7 @@ function makeGltfHuman(L,scale,o){
   const H={gltf:true,cls:o.cls,root,inner,model,hips:B('hips'),torso:chest,spine,head,
     armL:{hand:handL,shield:shieldL},armR:{hand:handR},eye,fpHide,mats,bw:1,ph:Math.random()*6,mixer,act,acts,sock,k:S.k,t:Math.random()*5,lastAtk:-1,castOn:0};
   for(const n of['Idle','Walking_A','Running_A'])act(n);
+  if(o.lvl)try{applyRankGltf(H,rankIdx(o.lvl))}catch(e){console.warn('rank',e)}
   acts.Idle.time=Math.random()*acts.Idle.getClip().duration;
   return H}
 
@@ -7522,6 +7523,23 @@ function applyArmorGltf(Hh,t){const m=armorMat(t),s=Hh.sock,add=(par,o)=>{o.user
   for(const kn of[s.knL,s.knR])add(kn,mesh(sph(.07,8,6),m,0,.02,.08));
   if(t>=4){const ci=add(s.head,mesh(new THREE.TorusGeometry(.25,.025,6,18),m,0,.62,0));ci.rotation.x=Math.PI/2;add(s.head,mesh(sph(.04,8,6),t>=6?new THREE.MeshBasicMaterial({color:0xffffff}):M.gold,0,.64,.25,false))}
   if(t>=6)add(s.chest,mesh(new THREE.OctahedronGeometry(.06),new THREE.MeshBasicMaterial({color:t===7?0xff80ff:0xbff4ff,toneMapped:false}),0,.14,.27,false))}
+
+// ================= v2: armatura che cambia col rango =================
+// Le parti grigie (metallo) della texture prendono il colore del rango: Legno originale, poi bronzo, argento, oro,
+// platino, diamante. In più: spallacci dal Bronzo, corona dall'Oro, gemme che brillano dal Platino, alone dal Diamante.
+const RANK_METAL=[null,[205,127,60],[226,232,242],[255,196,64],[130,232,222],[150,205,255]],RANK_TEX={};
+function glbRankTex(src,rk){const key=src.uuid+'|'+rk;if(RANK_TEX[key])return RANK_TEX[key];const img=src.image;if(!img||!img.width)return src;
+  const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height),p=d.data,col=RANK_METAL[rk];
+  for(let i=0;i<p.length;i+=4){const r=p[i],g=p[i+1],b=p[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510,sat=mx?(mx-mn)/mx:0;
+    if(sat<.14&&l>.22&&l<.93){const k=Math.min(1.25,l*1.25);p[i]=Math.min(255,col[0]*k);p[i+1]=Math.min(255,col[1]*k);p[i+2]=Math.min(255,col[2]*k)}}
+  x.putImageData(d,0,0);const t=new THREE.CanvasTexture(c);t.flipY=src.flipY;t.encoding=src.encoding;t.wrapS=src.wrapS;t.wrapT=src.wrapT;t.magFilter=src.magFilter;t.minFilter=src.minFilter;t.anisotropy=4;RANK_TEX[key]=t;return t}
+function applyRankGltf(H,rk){if(!H||!H.gltf)return;rk=clamp(rk|0,0,5);
+  if(rk>0)H.model.traverse(n=>{if(n.isMesh&&n.material.map&&!/_Head(_Hooded)?$/.test(n.name)){n.material.map=glbRankTex(n.material.map,rk);n.material.needsUpdate=true;if(rk>=2){n.material.metalness=Math.max(n.material.metalness||0,.25);n.material.roughness=Math.min(n.material.roughness==null?1:n.material.roughness,.6)}}});
+  const s=H.sock,c=RANK_METAL[rk],hex=c?(c[0]<<16|c[1]<<8|c[2]):0,mm=std({color:hex,metalness:.7,roughness:.3}),add=(par,o)=>{o.userData.rankGear=1;par.add(o);return o};
+  if(rk>=1)for(const sh of[s.shL,s.shR]){const p=add(sh,mesh(new THREE.SphereGeometry(.2,10,8,0,Math.PI*2,0,Math.PI/2),mm,0,.1,0));p.scale.set(1.2,.75,1.15)}
+  if(rk>=3){const cr=new THREE.Group();cr.userData.rankGear=1;cr.position.set(0,1.16,0);s.head.add(cr);cr.add(mesh(cyl(.36,.4,.14,16,1,true),mm,0,0,0));for(let q=0;q<7;q++){const a=q/7*Math.PI*2,sp=mesh(cone(.06,.2,4),mm,Math.sin(a)*.37,.16,Math.cos(a)*.37);cr.add(sp)}}
+  if(rk>=4){const gem=glowM(rk>=5?0xbfe8ff:0x9affea);add(s.chest,mesh(new THREE.OctahedronGeometry(.09),gem,0,.25,.42,false));add(s.head,mesh(new THREE.OctahedronGeometry(.08),gem,0,1.18,.4,false))}
+  if(rk>=5){const halo=mesh(new THREE.TorusGeometry(.42,.035,6,28),glowM(0xdff4ff),0,1.55,-.05,false);halo.rotation.x=Math.PI/2;add(s.head,halo)}}
 
 
 // ================= Level =================
@@ -7789,7 +7807,7 @@ const squadCap=()=>3;
 let allies=[];
 const pcl=()=>PCLASS[P.cls];
 function recalcStats(){const c=pcl(),l=P.lvl;P.maxHp=Math.round(c.hp*(1+.06*(l-1))+P.camp.tenda*20+armorHp());P.maxMp=Math.round(c.mp*(1+.03*(l-1)));P.dmgM=1+.05*(l-1)+.08*rankIdx(l)}
-function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);(H.armL.shield||H.armL.hand).add(shieldObj);auraObj=null;equipVisual();setAura()}
+function buildPlayer(){pRoot.clear();setTimeout(()=>{const a=armorEq();applyArmorVisual(H,a?a.t:-1)},0);H=makeHumanoid(P.look,1,{cls:P.cls,lvl:P.lvl});pRoot.add(H.root);shieldObj=makeShield(P.look.shield);(H.armL.shield||H.armL.hand).add(shieldObj);auraObj=null;equipVisual();setAura()}
 function setAura(){if(auraObj)pRoot.remove(auraObj);const ri_=rankIdx(P.lvl);if(ri_<1){auraObj=null;return}auraObj=makeAura(RANKS[ri_][2]);pRoot.add(auraObj)}
 function equipVisual(){if(!H)return;for(const o of[weaponObj,weapon2])if(o&&o.parent)o.parent.remove(o);weapon2=null;const w=P.inv[P.eq];shieldObj.visible=!!pcl().shield;if(!w)return;weaponObj=makeWeaponMesh(w);
   if(w.base==='bow'){H.armL.hand.add(weaponObj);shieldObj.visible=false}else{H.armR.hand.add(weaponObj);weaponObj.rotation.x=-.25;if(w.base==='daggers'&&!pcl().shield){weapon2=makeWeaponMesh(w);weapon2.rotation.x=-.25;H.armL.hand.add(weapon2)}}}
@@ -7819,7 +7837,7 @@ function spawnMon(type,x,z,lvl){if(MP.client&&!MP.allowSpawn)return{dead:true,ob
   e.maxHp=e.hp;e.mid=++MP.midC;e.room=LV&&!LV.camp?LV.room[tileAt(x,z)]:-1;e.obj.position.set(x,0,z);return addEnt(e)}
 
 // ================= Allies =================
-function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
+function makeAlly(d){const cl=PCLASS[d.cls],h=makeHumanoid(d.look,1,{cls:d.cls,lvl:d.lvl||1}),wb=cl.start[0],w=makeWeaponMesh({base:wb,rar:Math.min(3,Math.floor((d.lvl||1)/12)),el:null});
   if(wb==='bow')h.armL.hand.add(w);else{h.armR.hand.add(w);w.rotation.x=-.25}let sh=null;if(cl.shield){sh=makeShield(d.look.shield);(h.armL.shield||h.armL.hand).add(sh)}
   const lvl=d.lvl||1,rk_=BRAR[d.rar|0]||BRAR[0],mh=Math.round(cl.hp*.7*(1+.07*(lvl-1))*rk_.m);
   const e={kind:'ally',team:'ally',cls:d.cls,name:d.name,look:d.look,data:d,x:P.x+rr(-1,1),z:P.z+rr(-1,1),y:0,vy:0,yaw:0,hp:mh,maxHp:mh,dmg:(cl.range>3?8:10)*(1+.08*(lvl-1))*rk_.m,rar:d.rar|0,spd:5.4*cl.spd,r:.4,obj:h.root,H:h,mats:h.mats,shield:sh,weapon:w,
@@ -7850,7 +7868,7 @@ function banner(big,small,ms=2200){const b=$('banner');b.innerHTML='';const s=do
 function showCombo(){const c=$('combo');if(P.combo>=3){c.innerHTML='';const s=document.createElement('small');s.textContent='COMBO';c.append(s,document.createTextNode('x'+P.combo));c.style.opacity=1}else c.style.opacity=0}
 let freeze=0,shake=0,hurtT=0;
 function gainXP(n){if(P.lvl>=50)return;P.xp+=n;let up=false,rankUp=false;while(P.lvl<50&&P.xp>=xpNeed(P.lvl)){P.xp-=xpNeed(P.lvl);const r0=rankIdx(P.lvl);P.lvl++;up=true;if(rankIdx(P.lvl)>r0)rankUp=true}
-  if(up){vib([60,40,60]);recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){setAura();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
+  if(up){vib([60,40,60]);recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;burst(P.x,P.y+1,P.z,RANKS[rankIdx(P.lvl)][2],40,5,1.2,2);if(rankUp){buildPlayer();banner(`Rango ${RANKS[rankIdx(P.lvl)][0]}!`,`LIVELLO ${P.lvl} · ABILITÀ POTENZIATA`,3200);music.stinger('rank')}else{banner(`Livello ${P.lvl}!`,'PIÙ VITA E PIÙ DANNO',1800);music.stinger('level')}if(pet)pet.obj.scale.setScalar(.8+rankIdx(P.lvl)*.15);saveGame()}}
 function allyXP(n){for(const a of allies){const d=a.data;d.xp=(d.xp||0)+n;if(d.xp>=xpNeed(d.lvl)*.8&&d.lvl<50){d.xp=0;d.lvl++;a.lvl=d.lvl;a.maxHp=Math.round(PCLASS[a.cls].hp*.7*(1+.07*(d.lvl-1))*(BRAR[d.rar|0]||BRAR[0]).m);a.hp=a.maxHp;a.dmg*=1.08;float(a.x,a.y+2.3,a.z,`${a.name} liv. ${d.lvl}`,'#7be36b');say(a,'level')}}}
 
 // ================= Combat =================
@@ -8378,7 +8396,7 @@ function mpGhost(e,dt){e.flash-=dt;if(e.mats)for(const m of e.mats)m.emissive&&m
 
 // ---------- remote players ----------
 function remoteRec(p){let r=MP.remotes.get(p.peer);const pr=p.presence;
-  if(!r){const look=pr.lk&&typeof pr.lk==='object'?pr.lk:randLook();let H_;try{H_=makeHumanoid(look,1,{cls:PCLASS[pr.c]?pr.c:null})}catch(e){H_=makeHumanoid(randLook())}
+  if(!r){const look=pr.lk&&typeof pr.lk==='object'?pr.lk:randLook();let H_;try{H_=makeHumanoid(look,1,{cls:PCLASS[pr.c]?pr.c:null,lvl:pr.lv|0})}catch(e){H_=makeHumanoid(randLook())}
     r={peer:p.peer,kind:'remote',team:'ally',H:H_,root:H_.root,x:0,z:0,y:0,yaw:0,tx:0,tz:0,ty:0,tyaw:0,r:.4,hp:100,maxHp:100,at:pr.at|0,atkT:-1,sh:pr.sh|0,ab:pr.ab|0,w:null,wObj:null,sObj:null,first:true,inGame:false,down:false,dead:false,name:'',cls:'cavaliere',lv:1};
     MP.remotes.set(p.peer,r)}
   r.name=String(pr.n||'Amico').slice(0,14);r.cls=PCLASS[pr.c]?pr.c:'cavaliere';r.lv=pr.lv|0;
