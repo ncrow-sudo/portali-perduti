@@ -5055,7 +5055,10 @@ const GLB={on:store.get('pp_gltf',true),src:{},clips:null,ready:false,failed:fal
 try{if(/[?&]classico\b/.test(location.search))GLB.on=false}catch(e){}
 // un file per classe (solo mesh e scheletro) e uno con le animazioni, condivise perché lo scheletro è lo stesso
 const GLB_CLASSES=['cavaliere','mago','arciere','assassino','fabbro'];
-const GLB_H=1.95; // altezza in unità del procedurale (prima della scala .93)
+const GLB_H=2.0; // altezza in unità del procedurale (prima della scala .93)
+// i modelli KayKit hanno la testa grande quasi metà dell'altezza: dall'alto testa e cappello coprivano il corpo.
+// Rimpiccioliamo la testa (con elmo e cappelli) e scaliamo il resto, così il corpo è più grande e visibile.
+const GLB_HEAD=.68;
 const GLB_UPPER=new Set(['spine','chest','head','upperarml','lowerarml','wristl','handl','handslotl','upperarmr','lowerarmr','wristr','handr','handslotr']);
 function glbDone(){const c=GLB.cbs;GLB.cbs=[];c.forEach(f=>{try{f()}catch(e){console.warn(e)}})}
 function glbFetch(ld,f){return new Promise(res=>{const ko=e=>{console.warn('glb',f,e);res(null)};
@@ -5079,7 +5082,8 @@ function glbClips(list){const clips={};
 function glbPrep(cls,g){
   const scene=g.scene;scene.updateMatrixWorld(true);let top=0;
   scene.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;if(!n.geometry.boundingBox)n.geometry.computeBoundingBox();top=Math.max(top,n.geometry.boundingBox.max.y)}});
-  GLB.src[cls]={scene,k:GLB_H/Math.max(1,top)}}
+  const hb=scene.getObjectByName('head'),hy=hb?hb.getWorldPosition(new THREE.Vector3()).y:top*.55;
+  GLB.src[cls]={scene,k:GLB_H/Math.max(1,hy+(top-hy)*GLB_HEAD)}}
 
 // socket: gruppo figlio di un osso, con gli assi del modello in posa di riposo e misure in metri come il procedurale
 function glbSock(bone,k,rot){const g=new THREE.Group();bone.add(g);
@@ -5097,9 +5101,9 @@ function makeGltfHuman(L,scale,o){
       if(L&&LOOK.skin[L.skin]){const a=new THREE.Color(LOOK.skin[L.skin]),b=new THREE.Color(LOOK.skin[0]);n.material.color.setRGB(Math.min(1,a.r/b.r),Math.min(1,a.g/b.g),Math.min(1,a.b/b.b))}}
     if(/_(Cape|ArmLeft|ArmRight)$/.test(n.name))fpHide.push(n);
     if(/_Cape$/.test(n.name)&&L&&LOOK.shirt[L.shirt]!=null){n.material.map=null;n.material.color.set(LOOK.shirt[L.shirt]);n.material.roughness=.85}});
-  root.updateMatrixWorld(true);
   const B=nm=>model.getObjectByName(nm);
-  const head=B('head'),chest=B('chest'),spine=B('spine');
+  const head=B('head'),chest=B('chest'),spine=B('spine');head.scale.setScalar(GLB_HEAD);
+  root.updateMatrixWorld(true);
   // in prima persona la testa sparisce: l'osso nasconde i figli (elmo), la mesh della testa va nascosta a parte
   let hv=true;Object.defineProperty(head,'visible',{get(){return hv},set(v){hv=v;for(const m of headMeshes)m.visible=v}});
   const handR=glbSock(B('handslotr'),S.k,[-Math.PI/2,0,0]),handL=glbSock(B('handslotl'),S.k,[-Math.PI/2,0,0]),shieldL=glbSock(B('handslotl'),S.k,[0,0,0]);
@@ -5117,7 +5121,7 @@ function makeGltfHuman(L,scale,o){
 
 // velocità "naturali" delle animazioni (m/s nella scala del gioco, misurate sui piedi): gambe corte,
 // quindi oltre una certa velocità accettiamo un po' di scivolamento invece di animazioni frenetiche
-const GLB_WALK=.9,GLB_RUN=2.4;
+const GLB_WALK=1.1,GLB_RUN=2.9;
 const _qa=new THREE.Quaternion(),_qb=new THREE.Quaternion(),_ax=new THREE.Vector3();
 function glbTwist(bone,ang){if(!bone||!ang)return;bone.parent.getWorldQuaternion(_qa);_ax.set(0,1,0).applyQuaternion(_qa.invert());_qb.setFromAxisAngle(_ax,ang);bone.quaternion.premultiply(_qb)}
 // pose: {speed, atk:0..1|-1, atkKind, block, draw, cast, air, dance, dead, sit, fp, twist}
