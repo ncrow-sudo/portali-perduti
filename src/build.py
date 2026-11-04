@@ -3,7 +3,7 @@
 import os, json, base64, shutil
 H = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(H)
 rd = lambda p: open(os.path.join(H, p), encoding='utf-8').read()
-ORDER = ['g1','g1b','g2','g2b','g2c','g2g','g3','g4','g5','g7','g8','g9','g10ux','g6a','g6b']
+ORDER = ['g1','g1b','g2','g2b','g2c','g2g','g3','g3n','g4','g5','g7','g8','g9','g10ux','g6a','g6b']
 
 def i18n():
     ns = {}; exec(rd('i18n/dict.py'), ns)

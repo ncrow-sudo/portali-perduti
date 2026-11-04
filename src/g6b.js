@@ -200,6 +200,6 @@ function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;autoQuality(dt
   if(RAINBOW.length){const hh=(now/2500)%1;for(const m of RAINBOW){m.color.setHSL(hh,.9,.62);if(m.emissive)m.emissive.setHSL(hh,.9,.2)}}
   renderer.render(scene,camera);drawOverlay();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
-glbLoad();GLB.whenReady(()=>{window.__ready=true;const b=$('btnNew');b.disabled=false;b.textContent='Nuova avventura';
+glbLoad();natLoad();GLB.whenReady(()=>{window.__ready=true;const b=$('btnNew');b.disabled=false;b.textContent='Nuova avventura';
   // se il giocatore era già stato costruito col modello vecchio (ingresso veloce da QR), lo ricostruiamo
   if(typeof H!=='undefined'&&H&&!H.gltf&&P.look&&GLB.has(P.cls))buildPlayer()});

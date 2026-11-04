@@ -86,17 +86,20 @@ function mkBasket(x,z,crab){const b=makeBasket();b.g.position.set(x,groundH(x,z)
 // ================= Chambers: every room a new world, doors lock until it's cleared =================
 function enemiesIn(rid){return ENT.filter(e=>!e.dead&&e.team==='enemy'&&!e.ghost&&LV.room[tileAt(e.x,e.z)]===rid)}
 function enterBiome(b){LV.curBiome=b;const B=BIOMES[b];if(!B)return;LV.fogTint=STYLES[B.style].fog;const w=chooseWeather();if(w!==wName){setWeather(w);wFast=6}}
-function chamberTick(dt){if(!LV||LV.camp||!LV.doors||!LV.doors.length)return;const k=tileAt(P.x,P.z),rid=k>=0?LV.room[k]:-1;
-  if(LV.locked!=null){if(!enemiesIn(LV.locked).length)openChamber(LV.locked);return}
+function chamberTick(dt){if(!LV||LV.camp||!LV.path)return;const k=tileAt(P.x,P.z),rid=k>=0?LV.room[k]:-1;
+  if(LV.locked!=null){if(!enemiesIn(LV.locked).length)openChamber(LV.locked);
+    // senza porte si può scappare: entrando in un'altra zona la battaglia resta aperta, senza ricompensa
+    else if(LV.nat&&rid>=0&&rid!==LV.locked){LV.locked=null;LV.lastRid=-1}
+    return}
   if(rid<0){LV.lastRid=-1;return}if(rid===LV.lastRid)return;LV.lastRid=rid;const r=LV.R[rid];if(!r)return;
   const newWorld=r.biome&&r.biome!==LV.curBiome;if(newWorld)enterBiome(r.biome);
   LV.cleared=LV.cleared||{};const onPath=LV.path.includes(r);const foes=onPath&&!LV.cleared[rid]&&!MP.on?enemiesIn(rid):[];
   if(!foes.length){if(onPath)LV.cleared[rid]=1;if(newWorld)banner(BIOMES[r.biome].n,THEMES[r.theme]?THEMES[r.theme].toUpperCase():'',1500);return}
   LV.locked=rid;for(const g of GATES)if(g.door&&(g.ra===rid||g.rb===rid)&&(g.open||g.lifting)){g.open=false;g.lifting=false;g.lowering=true}
-  for(const e of foes)e.aggro=true;vib(25);for(const a of allies)if(LV.room[tileAt(a.x,a.z)]!==rid){a.x=P.x+rr(-1,1);a.z=P.z+rr(-1,1);a.y=groundH(a.x,a.z)}
-  computePD();sfx('gate');shake=Math.max(shake,.15);banner('Sconfiggi tutti i mostri!',(BIOMES[r.biome]?BIOMES[r.biome].n:'').toUpperCase(),1700)}
+  for(const e of foes)e.aggro=true;vib(25);if(!LV.nat)for(const a of allies)if(LV.room[tileAt(a.x,a.z)]!==rid){a.x=P.x+rr(-1,1);a.z=P.z+rr(-1,1);a.y=groundH(a.x,a.z)}
+  computePD();sfx(LV.nat?'beep':'gate');shake=Math.max(shake,.15);banner('Sconfiggi tutti i mostri!',(BIOMES[r.biome]?BIOMES[r.biome].n:'').toUpperCase(),1700)}
 function openChamber(rid){LV.locked=null;LV.cleared[rid]=1;for(const g of GATES)if(g.door&&(g.ra===rid||g.rb===rid)&&!g.open){g.lowering=false;g.lifting=true}
-  sfx('secret');banner('Stanza completata!','LE PORTE SI APRONO',1500);dropGold(P.x,P.z,8+floor*4);if(Math.random()<.3)dropItem(P.x,P.z,'potion');P.mp=P.maxMp}
+  sfx('secret');banner(LV.nat?'Zona liberata!':'Stanza completata!',LV.nat?'BOTTINO E MANA PIENO':'LE PORTE SI APRONO',1500);dropGold(P.x,P.z,8+floor*4);if(Math.random()<.3)dropItem(P.x,P.z,'potion');P.mp=P.maxMp}
 
 // ================= Update =================
 const inp={f:0,s:0};let atkDown=false,atkPrev=false,blockDown=false,joy={x:0,y:0};

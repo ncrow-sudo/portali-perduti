@@ -4,3 +4,7 @@ Modelli 3D dei personaggi
   licenza Creative Commons Zero (CC0): http://creativecommons.org/publicdomain/zero/1.0/
   Ridotti con tools/prepara_modelli.mjs: un file per classe senza animazioni, armi e scudi del pacchetto,
   e un file con le 18 animazioni usate dal gioco (lo scheletro è lo stesso per tutti).
+
+Oggetti delle mappe naturali
+- natura.glb: alberi, rocce, case e oggetti dal pacchetto "KayKit: Medieval Hexagon Pack 1.0" di Kay Lousberg
+  (www.kaylousberg.com), licenza CC0. Uniti e compressi con tools/prepara_natura.mjs.
