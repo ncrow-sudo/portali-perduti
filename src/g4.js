@@ -128,7 +128,7 @@ function hitEnt(e,dmg,o={}){if(e.dead||e.down)return;if(e.shield>0){if(Math.rand
     if(b.poly&&!e.boss&&!e.poly){e.poly=6;sfx('chicken');float(e.x,e.y+2,e.z,'COCCODÈ!','#ffd23a',1)}if(b.bubble&&!e.boss&&!e.bubble&&e.hp>0){e.bubble=3;sfx('pop');float(e.x,e.y+2,e.z,'BOLLA!','#bfe8ff',1)}}
   if(o.kb&&e.beh!=='plant'){const k=e.boss?.12:1/Math.max(.6,e.r*1.5);e.kx+=o.kx*o.kb*k;e.kz+=o.kz*o.kb*k}if(o.stun&&!e.boss)e.stun=Math.max(e.stun,o.stun);
   if(e.hp<=0)killEnt(e,o.w,o.src)}
-function killEnt(e,w,src){if(e.dead||e.ghost)return;e.dead=true;stats.kills++;burst(e.x,e.y+1,e.z,'#ffffff',16,4);burst(e.x,e.y+1,e.z,pick(['#ffc53d','#6cc070','#4aa8ff','#ff6bf0']),16,4);
+function killEnt(e,w,src){if(e.dead||e.ghost)return;e.dead=true;stats.kills++;if(e.team==='enemy')dragoXP(e.boss?30:e.elite||e.champ?5:1);burst(e.x,e.y+1,e.z,'#ffffff',16,4);burst(e.x,e.y+1,e.z,pick(['#ffc53d','#6cc070','#4aa8ff','#ff6bf0']),16,4);
   dropGold(e.x,e.z,Math.round(ri(e.gold[0],e.gold[1])*(pcl().gold||1))+(e.stolen?e.stolen*2:0));gainXP(e.xp);allyXP(Math.round(e.xp*.5));float(e.x,e.y+2.6+e.r,e.z,`+${e.xp} XP`,'#b0e4ff');
   if(src&&src.kind==='ally')say(src,'kill');mission&&mission.on('kill',e);if(MP.host)mpKill(e);
   if(Math.random()<.1)dropItem(e.x,e.z,'potion');if(e.mimic||e.elite)dropItem(e.x,e.z,'weapon',makeWeapon(floor,Math.max(1,rollRarity(floor,1))));if(e.elite&&Math.random()<.45)dropItem(e.x+.5,e.z,'armor',makeArmor(rollArmorTier(floor,1)));
