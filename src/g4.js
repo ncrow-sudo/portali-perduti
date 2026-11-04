@@ -30,7 +30,8 @@ const PCLASS={
 const RANKS=[['Legno',1,'#b08860'],['Bronzo',10,'#d08a40'],['Argento',20,'#dfe6ee'],['Oro',30,'#ffc53d'],['Platino',40,'#7fe8e0'],['Diamante',50,'#b0e4ff']];
 const xpNeed=l=>Math.round(30+l*l*1.5+l*12);
 const rankIdx=l=>{let r=0;RANKS.forEach((k,i)=>{if(l>=k[1])r=i});return r};
-const DIFFS={facile:{n:'Facile',hp:.7,dmg:.65,cnt:.9,tok:1},normale:{n:'Normale',hp:1.15,dmg:1.05,cnt:1.5,tok:3},eroico:{n:'Eroico',hp:1.6,dmg:1.5,cnt:1.9,tok:4}};
+// v2: normale ed eroico più impegnativi. agg = moltiplicatore delle pause tra un attacco e l'altro; champ = probabilità di un campione
+const DIFFS={facile:{n:'Facile',hp:.7,dmg:.65,cnt:.9,tok:1,agg:1.15,champ:0},normale:{n:'Normale',hp:1.45,dmg:1.35,cnt:1.85,tok:4,agg:.8,champ:.07},eroico:{n:'Eroico',hp:2,dmg:1.8,cnt:2.2,tok:5,agg:.65,champ:.13}};
 let DIFF=DIFFS.normale;
 
 // ================= State =================
@@ -72,6 +73,9 @@ function spawnMon(type,x,z,lvl){if(MP.client&&!MP.allowSpawn)return{dead:true,ob
   const e={kind:'mon',team:'enemy',type,n:d.n,x,z,y:0,vy:0,yaw:rr(0,6),cd:rr(.8,2),wind:0,flash:0,stun:0,poly:0,bubble:0,burn:0,poison:0,slow:0,dot:0,kx:0,kz:0,aggro:false,hpShow:0,ph:rr(0,6),
     hp:Math.round(d.hp*k),dmg:Math.round(d.dmg*kd),spd:d.spd,r:d.r,beh:d.beh,fly:!!d.fly,fire:d.fire,xp:Math.round(d.xp*(1+.15*(lvl-1))),gold:d.gold,boss:!!d.boss,elite:!!d.elite,mimic:!!d.mimic,obj:m.g,mats:m.mats,m,H:m.H,special:3,orbit:Math.random()<.5?1:-1};
   if(type==='monkey'){const tail=mesh(new THREE.TorusGeometry(.25,.04,6,12,Math.PI*1.4),std({color:0x5a3a1e}),0,.9,-.25);tail.rotation.y=Math.PI/2;m.g.add(tail)}
+  // campione: più grosso, dorato, molto più forte (mai boss né élite, mai sui primi piani)
+  if(!e.boss&&!e.elite&&!e.mimic&&lvl>=2&&LV&&!LV.camp&&Math.random()<(DIFF.champ||0)+Math.min(.08,lvl*.006)){e.champ=1;e.hp=Math.round(e.hp*2.4);e.dmg=Math.round(e.dmg*1.35);e.spd*=1.15;e.xp=Math.round(e.xp*3);e.gold=[e.gold[0]*3,e.gold[1]*3];
+    e.obj.scale.multiplyScalar(1.3);e.r*=1.2;const au=makeAura('#ffc53d');au.scale.setScalar(1+e.r);e.obj.add(au);if(e.mats)for(const mm of e.mats)if(mm.emissive){mm.emissive.set(0x4a3000)}}
   e.maxHp=e.hp;e.mid=++MP.midC;e.room=LV&&!LV.camp?LV.room[tileAt(x,z)]:-1;e.obj.position.set(x,0,z);return addEnt(e)}
 
 // ================= Allies =================
@@ -111,7 +115,7 @@ function allyXP(n){for(const a of allies){const d=a.data;d.xp=(d.xp||0)+n;if(d.x
 
 // ================= Combat =================
 function dmgMult(w){let m=1;if(w&&w.el==='fire')m*=1-.3*Wc.rain;if(w&&w.el==='shock')m*=1+.3*Wc.rain;return m}
-function hitEnt(e,dmg,o={}){if(e.dead||e.down)return;const fromP=o.fromP;let crit=false;
+function hitEnt(e,dmg,o={}){if(e.dead||e.down)return;if(e.shield>0){if(Math.random()<.25)float(e.x,e.y+3,e.z,'SCUDO!','#9adfff');return}if(e.boss&&e.stun>0&&o.fromP)dmg*=2;const fromP=o.fromP;let crit=false;
   if(fromP){crit=Math.random()<(.1+(o.w&&WT[o.w.base].critB||0)+(pcl().critB||0));dmg*=(crit?1.8:1)*(1+Math.min(.5,P.combo*.04))*dmgMult(o.w)*P.dmgM;if(P.shadowT>0){dmg*=3;crit=true;endShadow()}P.combo++;P.comboT=2.5;showCombo();freeze=Math.max(freeze,crit?.07:.035)}
   dmg=Math.max(1,Math.round(dmg));
   if(e.team==='ally'){e.hp-=dmg;e.flash=.15;float(e.x,e.y+2,e.z,''+dmg,'#ff9a8a');if(e.hp<e.maxHp*.3)say(e,'low');if(e.hp<=0){e.hp=0;e.down=14;toast(`${e.name} è a terra! Avvicinati e premi Usa`)}return}
