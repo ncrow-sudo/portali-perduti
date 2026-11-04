@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d0f0c"><link rel="manifest" href="/manifest.webmanifest"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Portali"><link rel="apple-touch-icon" href="/icon-192.png"><style>html,body{margin:0;padding:0}</style></head><body>
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#0d0f0c"><link rel="manifest" href="/manifest.webmanifest"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Portali"><link rel="apple-touch-icon" href="/icon-192.png"><style>html,body{margin:0;padding:0}</style></head><body>
 <meta charset="utf-8">
 <title>Portali Perduti</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -8722,6 +8722,19 @@ $('coachNext').onclick=()=>{UX.coachStep++;coachShow()};
 function goFull(){if(!isTouch||!window.PP_SITE)return;const d=document.documentElement;try{if(!document.fullscreenElement&&d.requestFullscreen){const p=d.requestFullscreen({navigationUI:'hide'});if(p&&p.then)p.then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}}catch(e){}}
 ['btnNew','btnCont','btnMP'].forEach(id=>{const b=$(id);if(b)b.addEventListener('click',goFull,true)});
 (()=>{const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),standalone=navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;if(ios&&!standalone&&window.PP_SITE)$('homeTip').hidden=false})();
+// ================= niente zoom su telefoni e tablet =================
+// Safari (iPhone/iPad) ignora user-scalable=no: due dita insieme (joystick + attacco) diventano un "pizzico" e la pagina
+// si ingrandisce. Blocchiamo i suoi gesti, il doppio tocco fuori dai campi di testo e, se la pagina è comunque
+// ingrandita, la riportiamo a scala 1.
+(function(){const stop=e=>{e.preventDefault()};
+  for(const ev of['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,stop,{passive:false});
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1||(e.scale!=null&&e.scale!==1))e.preventDefault()},{passive:false});
+  let lastEnd=0;document.addEventListener('touchend',e=>{const t=e.target,now=Date.now(),txt=t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT');
+    if(!txt&&now-lastEnd<320&&e.cancelable)e.preventDefault();lastEnd=now},{passive:false});
+  function unzoom(){const vv=window.visualViewport;if(!vv||vv.scale<=1.02)return;let m=document.querySelector('meta[name=viewport]');
+    if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m)}const c='width=device-width,initial-scale=1,viewport-fit=cover';
+    m.setAttribute('content',c+',maximum-scale=1.01');setTimeout(()=>{m.setAttribute('content',c+',maximum-scale=1,user-scalable=no')},60);window.scrollTo(0,0)}
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>setTimeout(unzoom,250));setInterval(unzoom,1500)})();
 
 
 // ================= Audio: adaptive music + ambience =================
