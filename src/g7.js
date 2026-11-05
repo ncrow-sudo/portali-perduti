@@ -43,7 +43,7 @@ function drawLobby(){const st=$('lobStatus');$('lobJoin').hidden=false;$('lobRoo
     if(pr.rc){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Entra';b.onclick=()=>{audioInit();mpJoin(String(pr.rc),false)};acts.appendChild(b)}d.append(iconBox(LOOK.shirt[(pr.lk&&pr.lk.shirt)|0]||'#888'),mid,acts);L.appendChild(d)}
   if(window.PP_SITE){$('lobDiag').textContent=conn?'Collegato al server del gioco.':'Collegamento al server in corso…';return}$('lobDiag').textContent=`Diagnosi: collegato ${conn?'sì':'no'} · persone con il gioco aperto adesso: ${others.length+1}${MP.lobErr?' · errore '+MP.lobErr:''}`}
 function lobbyPresence(){if(!MP.room)return;MP.room.presence({n:P.name,c:P.cls,lv:P.lvl,lk:P.look,st:'lobby',rc:null,host:0}).catch(e=>{MP.lobErr=e&&e.code})}
-async function mpJoin(code,asHost){if(!MP.room)return;code=code.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);if(code.length<3){$('lobStatus').textContent='Il codice ha 4 caratteri.';return}
+async function mpJoin(code,asHost){if(!MP.room)return;stat(asHost?'pp_stanza_creata':'pp_stanza_entrata',{qr:!!MP.autoJoin});code=code.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);if(code.length<3){$('lobStatus').textContent='Il codice ha 4 caratteri.';return}
   MP.r=codeRoom(code);MP.code=code;MP.host=!!asHost;MP.diag={t0:performance.now()};try{MP.r.onPeers(()=>{if(MP.on)renderParty()},e=>{MP.diag.connErr=e&&e.code})}catch(e){}try{MP.r.onConnection(c=>{MP.diag.conn=c},e=>{MP.diag.connErr=e&&e.code})}catch(e){}mpEnterRoomCamp()}
 $('lobCreate').onclick=()=>{audioInit();mpJoin(newCode(),true)};
 $('lobEnter').onclick=()=>{audioInit();mpJoin($('lobCode').value,false)};

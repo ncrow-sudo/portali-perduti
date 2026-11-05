@@ -10,5 +10,6 @@ Browser game for kids, deployed on Render (https://portali-perduti.onrender.com)
 - v2 maps (`src/g3.js` + `src/g3n.js`): no walls or gates. Rooms are organic clearings joined by trails (`natClearing`, `natTrail`); tile 1 is rendered as biome nature (trees, rocks, houses, sea) from `src/assets/natura.glb` (made by `tools/prepara_natura.mjs`) as chunked InstancedMesh, on one continuous terrain. Keep props light: check triangle counts when adding models.
 - Bosses (`src/g5b.js`): three phases with telegraphed attacks (meteor circles, charge, spiral). Dragons (`src/g9d.js`): type chosen by the player, grows with kills. Rank armor recolor in `src/g2g.js` (`applyRankGltf`).
 - `dist/claude.html` is the claude.ai Artifact version (no server; uses the Artifact `room` capability).
+- Anonymous stats (`src/g10s.js` + `/s` in `server.js`): site only, per-page-load random id, whitelisted events/props, forwarded to PostHog only if the Render env var `POSTHOG_KEY` is set (`POSTHOG_HOST`, default EU). Never add names, persistent ids or free text.
 - Players are children: keep no chat, no accounts, no personal data beyond a nickname; rooms only via code/QR.
 - Replies to the owner in Italian, concise, no em dashes.

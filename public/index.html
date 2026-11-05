@@ -7890,7 +7890,7 @@ function killEnt(e,w,src){if(e.dead||e.ghost)return;e.dead=true;stats.kills++;if
   dropGold(e.x,e.z,Math.round(ri(e.gold[0],e.gold[1])*(pcl().gold||1))+(e.stolen?e.stolen*2:0));gainXP(e.xp);allyXP(Math.round(e.xp*.5));float(e.x,e.y+2.6+e.r,e.z,`+${e.xp} XP`,'#b0e4ff');
   if(src&&src.kind==='ally')say(src,'kill');mission&&mission.on('kill',e);if(MP.host)mpKill(e);
   if(Math.random()<.1)dropItem(e.x,e.z,'potion');if(e.mimic||e.elite)dropItem(e.x,e.z,'weapon',makeWeapon(floor,Math.max(1,rollRarity(floor,1))));if(e.elite&&Math.random()<.45)dropItem(e.x+.5,e.z,'armor',makeArmor(rollArmorTier(floor,1)));
-  if(e.boss){stats.bosses++;banner('Boss sconfitto!',e.n.toUpperCase(),3000);dropItem(e.x-1,e.z,'armor',makeArmor(rollArmorTier(floor,e.type==='rePortali'?3:2)));dropItem(e.x,e.z,'weapon',makeWeapon(floor,Math.max(2,rollRarity(floor,1))));dropItem(e.x+1,e.z,'potion');P.dance=3;for(const a of allies)a.dance=3;music.stinger('victory');if(e.type==='rePortali'){MP.fin=1;setTimeout(showVictory,2600)}}
+  if(e.boss){stats.bosses++;stat('pp_boss',{boss:e.type,piano:floor|0,mp:!!MP.on});banner('Boss sconfitto!',e.n.toUpperCase(),3000);dropItem(e.x-1,e.z,'armor',makeArmor(rollArmorTier(floor,e.type==='rePortali'?3:2)));dropItem(e.x,e.z,'weapon',makeWeapon(floor,Math.max(2,rollRarity(floor,1))));dropItem(e.x+1,e.z,'potion');P.dance=3;for(const a of allies)a.dance=3;music.stinger('victory');if(e.type==='rePortali'){MP.fin=1;setTimeout(showVictory,2600)}}
   if(e.chick){world.remove(e.chick);e.chick=null}world.remove(e.obj)}
 function hurtPlayer(d,src,force){if(mode!=='play'||P.falling>0||P.mpDown>0)return false;if(!force&&(P.iT>0||P.dashT>0||P.chargeRun>0))return false;
   if(P.block&&src&&!force){const ang=Math.atan2(src.x-P.x,src.z-P.z),diff=Math.abs(angDiff(ang,P.yaw)),sh=!!pcl().shield;if(diff<1.25){if(sh&&performance.now()/1000-P.blockT<.28){sfx('parry');float(P.x,P.y+2.2,P.z,'PARATA!','#7fe3ff',1);if(src.kind==='mon'&&!src.boss)src.stun=1.4;burst(P.x+Math.sin(P.yaw)*.6,P.y+1.2,P.z+Math.cos(P.yaw)*.6,'#ffffff',14,3);freeze=.08;return false}
@@ -7995,7 +7995,7 @@ function startCamp(){resetRun();floor=0;genCampLevel();buildLevel();const cx=11*
   const bk=makeBasket();bk.g.position.set(cx-3,0,cz+3);world.add(bk.g);addInter({kind:'basket',x:cx-3,z:cz+3,y:0,lid:bk.lid,safe:true,crab:false,obj:bk.g});
   const reserve=P.army.filter(d=>!d.squad);reserve.slice(0,8).forEach((d,i)=>{const h=makeHumanoid(d.look,1,{cls:d.cls});const a=i/8*Math.PI*2;h.root.position.set(cx+Math.cos(a)*4.2,0,cz+Math.sin(a)*4.2);h.root.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));world.add(h.root);ANIM.push(dt=>{animHuman(h,{speed:0,sit:true},dt);return true})});
   (MP.on?(()=>{const a_=Math.random()*6.28;placeP(cx+Math.cos(a_)*2.4,cz+5+Math.sin(a_)*1.6,Math.PI)})():placeP(cx,cz+5,Math.PI));respawnAllies();placePet();computePD();music.setMood('camp');updClock();updHud();updMission()}
-function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giungla',type:'battaglia',id:'x'+n,L:n};genDungeon(n,node);buildLevel();const R=LV.R,BI=BIOMES[LV.biome]||BIOMES.giungla;LV.curBiome=(LV.path&&LV.path[0]&&LV.path[0].biome)||LV.biome;LV.lastRid=-1;LV.locked=null;LV.cleared={};setWeather(chooseWeather(),true);
+function startFloor(n,node){resetRun();floor=n;node=node||curNode()||{biome:'giungla',type:'battaglia',id:'x'+n,L:n};stat('pp_piano',{piano:n,bioma:node.biome,tipo:node.type,mp:!!MP.on});genDungeon(n,node);buildLevel();const R=LV.R,BI=BIOMES[LV.biome]||BIOMES.giungla;LV.curBiome=(LV.path&&LV.path[0]&&LV.path[0].biome)||LV.biome;LV.lastRid=-1;LV.locked=null;LV.cleared={};setWeather(chooseWeather(),true);
   const tilesOf=r=>{const t=[];for(let j=r.z0;j<r.z0+7;j++)for(let i=r.x0;i<r.x0+7;i++){const k=tIdx(i,j);if(LV.tile[k]===0&&!LV.ramp[k]&&!LV.plate[k])t.push([i,j])}return t};
   const POOL={funghi:['fungo','fungo','fatuo','ragno'],rovine:['fungo','draghetto','ragno','golem'],tempio:['golem','ragno','fatuo'],villaggio:['fungo','draghetto','fungo'],giardino:['pianta','fungo','fatuo'],lago:['fatuo','draghetto'],ponte:['fatuo','ragno']};
   for(const r of R){const c=W2(r.x0+3,r.z0+3),tl=sshuffle(tilesOf(r).filter(([i,j])=>Math.abs(i-r.x0-3)+Math.abs(j-r.z0-3)>1));
@@ -8355,7 +8355,7 @@ function drawLobby(){const st=$('lobStatus');$('lobJoin').hidden=false;$('lobRoo
     if(pr.rc){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Entra';b.onclick=()=>{audioInit();mpJoin(String(pr.rc),false)};acts.appendChild(b)}d.append(iconBox(LOOK.shirt[(pr.lk&&pr.lk.shirt)|0]||'#888'),mid,acts);L.appendChild(d)}
   if(window.PP_SITE){$('lobDiag').textContent=conn?'Collegato al server del gioco.':'Collegamento al server in corso…';return}$('lobDiag').textContent=`Diagnosi: collegato ${conn?'sì':'no'} · persone con il gioco aperto adesso: ${others.length+1}${MP.lobErr?' · errore '+MP.lobErr:''}`}
 function lobbyPresence(){if(!MP.room)return;MP.room.presence({n:P.name,c:P.cls,lv:P.lvl,lk:P.look,st:'lobby',rc:null,host:0}).catch(e=>{MP.lobErr=e&&e.code})}
-async function mpJoin(code,asHost){if(!MP.room)return;code=code.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);if(code.length<3){$('lobStatus').textContent='Il codice ha 4 caratteri.';return}
+async function mpJoin(code,asHost){if(!MP.room)return;stat(asHost?'pp_stanza_creata':'pp_stanza_entrata',{qr:!!MP.autoJoin});code=code.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);if(code.length<3){$('lobStatus').textContent='Il codice ha 4 caratteri.';return}
   MP.r=codeRoom(code);MP.code=code;MP.host=!!asHost;MP.diag={t0:performance.now()};try{MP.r.onPeers(()=>{if(MP.on)renderParty()},e=>{MP.diag.connErr=e&&e.code})}catch(e){}try{MP.r.onConnection(c=>{MP.diag.conn=c},e=>{MP.diag.connErr=e&&e.code})}catch(e){}mpEnterRoomCamp()}
 $('lobCreate').onclick=()=>{audioInit();mpJoin(newCode(),true)};
 $('lobEnter').onclick=()=>{audioInit();mpJoin($('lobCode').value,false)};
@@ -8736,6 +8736,16 @@ function goFull(){if(!isTouch||!window.PP_SITE)return;const d=document.documentE
     m.setAttribute('content',c+',maximum-scale=1.01');setTimeout(()=>{m.setAttribute('content',c+',maximum-scale=1,user-scalable=no')},60);window.scrollTo(0,0)}
   if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>setTimeout(unzoom,250));setInterval(unzoom,1500)})();
 
+// ================= Statistiche anonime (solo sul sito, non su claude.ai) =================
+// Il telefono manda piccoli segnali solo al server del gioco (/s); il server li passa a PostHog se è configurato.
+// Niente nomi, niente identificativi che restano sul dispositivo: solo un numero casuale per questa apertura della pagina.
+const STAT={sid:Math.random().toString(36).slice(2,12)+Date.now().toString(36).slice(-4),on:!!window.PP_SITE,t:0};
+function statDev(){const w=Math.min(screen.width,screen.height);return !isTouch?'computer':w>=700?'tablet':'telefono'}
+function stat(e,p){if(!STAT.on)return;try{const body=JSON.stringify({s:STAT.sid,e,p:Object.assign({disp:statDev(),lingua:typeof LANG==='string'?LANG:'it'},p||{})});
+  if(navigator.sendBeacon&&navigator.sendBeacon('/s',new Blob([body],{type:'text/plain'})))return;fetch('/s',{method:'POST',body,keepalive:true}).catch(()=>{})}catch(err){}}
+// un segnale al minuto mentre si gioca davvero (pagina visibile, partita in corso): minuti giocati = numero di segnali
+setInterval(()=>{if(mode!=='play'||document.hidden)return;stat('pp_gioca',{piano:floor|0,mp:!!MP.on,classe:P.cls,diff:P.diff,livello:P.lvl|0})},60000);
+
 
 // ================= Audio: adaptive music + ambience =================
 let AC=null,master,musBus,sfxBus,ambBus,verbIn,noiseBuf,muted=false,VOL=Object.assign({mus:60,sfx:80,amb:45},store.get('pp5_vol',{}));const LAY={};
@@ -8933,7 +8943,7 @@ $('btnCloseSet').onclick=closeScreens;$('bSet').onclick=openSet;
 function saveGame(){if(mode==='title'||mode==='avatar'||mode==='lobby')return;store.set('pp5_save',{look:P.look,name:P.name,cls:P.cls,lvl:P.lvl,xp:P.xp,diff:P.diff,view:cam.fp?'prima':'terza',cp:checkpoint,seed:seedBase,gold:P.gold,potions:P.potions,inv:P.inv,eq:P.eq,camp:P.camp,army:P.army,route:P.route,ng:P.ng||0,armors:P.armors||[],armorEq:P.armorEq||null,drago:P.drago||{t:'fuoco',xp:0}})}
 function loadGame(){const s=store.get('pp5_save',null);if(!s||!s.look)return false;Object.assign(P,{look:s.look,name:s.name||'Esploratore',cls:PCLASS[s.cls]?s.cls:'cavaliere',lvl:s.lvl||1,xp:s.xp|0,diff:DIFFS[s.diff]?s.diff:'normale',gold:s.gold|0,potions:s.potions|0,eq:s.eq|0,camp:s.camp||{tenda:0,fucina:0,caserma:0},army:s.army||[],route:s.route&&s.route.seed?s.route:{seed:(Math.random()*1e9)|0,cur:null,hist:[]},ng:s.ng|0,armors:Array.isArray(s.armors)?s.armors:[],armorEq:s.armorEq||null,drago:s.drago&&DRAGHI[s.drago.t]?{t:s.drago.t,xp:s.drago.xp|0}:{t:'fuoco',xp:0}});pet=null;ROUTE=null;P.army.forEach(d=>{d.rar=d.rar|0;d.squad=true});P.army.sort((a,b)=>(b.rar-a.rar)||(b.lvl-a.lvl));P.army.length=Math.min(P.army.length,squadCap());
   P.inv=s.inv&&s.inv.length?s.inv:[makeWeapon(1,1,PCLASS[P.cls].start[0])];if(P.eq>=P.inv.length)P.eq=0;DIFF=DIFFS[P.diff];cam.fp=s.view==='prima';checkpoint=s.cp|0;seedBase=s.seed||1;uid=Math.max(1,...P.inv.map(w=>w.id||0),...P.army.map(d=>d.id||0))+1;recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;buildPlayer();return true}
-function die(){if(MP.on){mpDie();return}mode='dead';P.hp=0;music.stinger('death');if(P.shadowT>0)endShadow();try{document.exitPointerLock&&document.exitPointerLock()}catch(e){}const lost=Math.floor(P.gold*.25);P.gold-=lost;saveGame();
+function die(){stat('pp_sconfitta',{piano:floor|0,mp:!!MP.on,livello:P.lvl|0});if(MP.on){mpDie();return}mode='dead';P.hp=0;music.stinger('death');if(P.shadowT>0)endShadow();try{document.exitPointerLock&&document.exitPointerLock()}catch(e){}const lost=Math.floor(P.gold*.25);P.gold-=lost;saveGame();
   $('deadTitle').textContent=floor>=best&&floor>1?`Nuovo record: piano ${floor}!`:`Caduto al piano ${floor}`;$('deadLine').textContent=`Hai perso ${lost} oro. Livello, zaino, armi ed esercito restano con te. Riparti dal piano ${Math.max(1,checkpoint)}.`;
   const rk=RANKS[rankIdx(P.lvl)][0],ds=$('deadStats');ds.innerHTML='';[[floor,'piano raggiunto'],[`${P.lvl}`,`livello · ${rk}`],[stats.kills,'mostri battuti'],[stats.bosses,'boss sconfitti'],[P.army.length,'compagni']].forEach(([v,l])=>{const d=document.createElement('div');d.innerHTML='<b></b><span></span>';d.firstChild.textContent=v;d.lastChild.textContent=l;ds.appendChild(d)});
   const w=P.inv[P.eq];$('shareTxt').textContent=`PORTALI PERDUTI · ${P.name} il ${pcl().n}\nRango ${rk}, livello ${P.lvl}\nPiano ${floor} del Tempio Perduto\n${stats.kills} mostri · ${stats.bosses} boss · ${P.army.length} compagni\nArma: ${w?w.name:'nessuna'}\nRiesci a fare meglio?`;
@@ -9000,13 +9010,15 @@ $('avRand').onclick=()=>{P.look=randLook();buildPlayer();drawAvatarUI()};
 $('avBack').onclick=()=>{if(avStep>0){avStep--;drawAvatarUI();$('scAvatar').scrollTop=0}else{$('scAvatar').hidden=true;$('scTitle').hidden=false;mode='title'}};
 $('btnNew').onclick=()=>{audioInit();P.look=randLook();P.look.hat='esploratore';P.cls='cavaliere';P.lvl=1;buildPlayer();setClassPreview();pRoot.rotation.y=0;avStep=0;$('scTitle').hidden=true;$('scAvatar').hidden=false;mode='avatar';drawAvatarUI()};
 function startNew(){P.name=($('avName').value||'Esploratore').trim().slice(0,14)||'Esploratore';$('scAvatar').hidden=true;seedBase=(Math.random()*1e9)|0;checkpoint=0;
-  P.diff=avDiff;DIFF=DIFFS[avDiff];P.drago={t:avDrago,xp:0};pet=null;cam.fp=avView==='prima';cam.fpPitch=0;P.view=avView;
+  P.diff=avDiff;DIFF=DIFFS[avDiff];P.drago={t:avDrago,xp:0};pet=null;
+  // statistiche anonime: un solo segnale 'nuovo giocatore' per dispositivo (il flag resta sul telefono, non viene inviato)
+  {let fresh=false;try{fresh=!localStorage.getItem('pp_stat_new');localStorage.setItem('pp_stat_new','1')}catch(e){}if(fresh)stat('pp_nuovo_giocatore',{classe:P.cls});stat('pp_partita',{tipo:'nuova',classe:P.cls,diff:P.diff,drago:avDrago})}cam.fp=avView==='prima';cam.fpPitch=0;P.view=avView;
   Object.assign(P,{lvl:1,xp:0,gold:40,potions:3,camp:{tenda:0,fucina:0,caserma:0},army:[],abCd:0,armors:[],armorEq:null,route:{seed:(Math.random()*1e9)|0,cur:null,hist:[]},ng:0});ROUTE=null;recalcStats();P.hp=P.maxHp;P.mp=P.maxMp;setClassPreview();buildPlayer();
   const buddy=newRecruit(P.cls==='mago'?'cavaliere':'mago',1,0);buddy.name=pick(NAMES.filter(n=>n!==P.name));P.army.push(buddy);recruits=null;
   renderSlots();setAbilityUI();if(MP.after){MP.after=false;mode='menu';saveGame();openLobby();return}mode='play';startCamp();saveGame();showTouch();
   banner(`Benvenuto, ${P.name}`,`${pcl().n.toUpperCase()} · RANGO LEGNO`,2600);setTimeout(coachStart,3200);setTimeout(()=>toast(`${buddy.name} il ${PCLASS[buddy.cls].n} viaggerà con te. Prova l'abilità ${pcl().abN} (${isTouch?'tasto viola':'X'}) sul manichino`),2800)}
 $('avGo').onclick=()=>{audioInit();if(avStep<2){avStep++;drawAvatarUI();$('scAvatar').scrollTop=0;return}startNew()};
-$('btnCont').onclick=()=>{if(!GLB.ready&&!GLB.failed){GLB.whenReady(()=>$('btnCont').click());return}audioInit();if(!loadGame())return;$('scTitle').hidden=true;mode='play';equipVisual();renderSlots();setAbilityUI();startCamp();showTouch();banner(`Bentornato, ${P.name}`,'IL PORTALE TI PORTA AL PIANO '+Math.max(1,checkpoint),2600)};
+$('btnCont').onclick=()=>{if(!GLB.ready&&!GLB.failed){GLB.whenReady(()=>$('btnCont').click());return}audioInit();if(!loadGame())return;stat('pp_partita',{tipo:'continua',classe:P.cls,diff:P.diff,livello:P.lvl|0});$('scTitle').hidden=true;mode='play';equipVisual();renderSlots();setAbilityUI();startCamp();showTouch();banner(`Bentornato, ${P.name}`,'IL PORTALE TI PORTA AL PIANO '+Math.max(1,checkpoint),2600)};
 const sv=store.get('pp5_save',null);if(sv&&sv.look){$('btnCont').hidden=false;$('btnCont').textContent=`Continua · ${sv.name||'Esploratore'} · liv ${sv.lvl||1} · piano ${Math.max(1,sv.cp||1)}`}
 $('recTxt').textContent=best?`Record: piano ${best}`:'Nessun record ancora';
 

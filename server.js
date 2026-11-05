@@ -10,9 +10,44 @@ const PORT = process.env.PORT || 3000;
 const PUB = path.join(__dirname, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.glb': 'model/gltf-binary' };
 
+// ---------- statistiche anonime ----------
+// I telefoni mandano a /s piccoli eventi (es. "un minuto di gioco"). Se POSTHOG_KEY è impostata su Render, il server li
+// inoltra a PostHog ogni 15 secondi; altrimenti li scarta. Niente IP, nomi o cookie: solo un id casuale per apertura pagina.
+const PH_KEY = process.env.POSTHOG_KEY || '', PH_HOST = (process.env.POSTHOG_HOST || 'https://eu.i.posthog.com').replace(/\/$/, '');
+const STAT_EV = new Set(['pp_nuovo_giocatore', 'pp_partita', 'pp_gioca', 'pp_piano', 'pp_stanza_creata', 'pp_stanza_entrata', 'pp_boss', 'pp_sconfitta']);
+const STAT_PROPS = new Set(['disp', 'lingua', 'piano', 'mp', 'classe', 'diff', 'livello', 'tipo', 'drago', 'bioma', 'qr', 'boss']);
+let statQ = [];
+const statRate = new Map(); // sid -> eventi nel minuto corrente
+function statTake(raw) {
+  let o; try { o = JSON.parse(raw); } catch (e) { return; }
+  if (!o || !STAT_EV.has(o.e) || typeof o.s !== 'string' || !/^[a-z0-9]{8,24}$/.test(o.s)) return;
+  const n = (statRate.get(o.s) || 0) + 1; statRate.set(o.s, n); if (n > 30) return;
+  const props = { $process_person_profile: false, $ip: null, versione: 'v2' };
+  for (const [k, v] of Object.entries(o.p || {})) if (STAT_PROPS.has(k) && (typeof v === 'number' || typeof v === 'boolean' || (typeof v === 'string' && v.length <= 24))) props[k] = v;
+  if (o.e === 'pp_gioca') props.minuti = 1;
+  if (statQ.length < 2000) statQ.push({ event: o.e, distinct_id: 'pp_' + o.s, properties: props, timestamp: new Date().toISOString() });
+}
+function statFlush() {
+  if (!statQ.length) return; const batch = statQ; statQ = [];
+  if (!PH_KEY) return;
+  const body = JSON.stringify({ api_key: PH_KEY, batch });
+  try {
+    const u = new URL(PH_HOST + '/batch/');
+    const r = require(u.protocol === 'http:' ? 'http' : 'https').request({ port: u.port || undefined, hostname: u.hostname, path: u.pathname, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, res => res.resume());
+    r.on('error', () => {}); r.end(body);
+  } catch (e) {}
+}
+setInterval(statFlush, 15000);
+setInterval(() => statRate.clear(), 60000);
+
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
   if (p === '/health') { res.end('ok'); return; }
+  if (p === '/s' && req.method === 'POST') {
+    let raw = ''; req.on('data', c => { raw += c; if (raw.length > 2048) req.destroy(); });
+    req.on('end', () => { statTake(raw); res.writeHead(204); res.end(); });
+    return;
+  }
   if (p === '/' || p === '') p = '/index.html';
   const f = path.join(PUB, path.normalize(p));
   if (!f.startsWith(PUB)) { res.writeHead(403); res.end(); return; }
